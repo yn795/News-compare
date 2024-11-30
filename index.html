@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Text Processing Tool</title>
+    <title>Combined Text Comparison and Replace Tool</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -53,14 +53,19 @@
             white-space: pre-wrap;
             box-sizing: border-box;
         }
+        .highlight {
+            color: blue;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
-    <h1>Text Processing Tool</h1>
+    <h1>Combined Text Comparison and Replace Tool</h1>
     <div class="container">
-        <textarea id="inputText" placeholder="Enter text here..."></textarea>
+        <textarea id="text1" placeholder="Enter left text here..."></textarea>
+        <textarea id="text2" placeholder="Enter right text here..."></textarea>
     </div>
-    <button onclick="processText()">Process Text</button>
+    <button onclick="compareAndReplace()">Compare and Replace</button>
     <div class="output" id="output"></div>
 
     <script>
@@ -95,28 +100,28 @@
             "そろう", "見いだす", "年内に決着をつけるのがベストだが、実際にどうなるのか、まだ見えない"
         ];
 
-        const wordsToRemove = [
-            "0R000", "激しい絵", "ＯＮ", "※", "ドンパチ", "@", "ＮＡ", "NA", "･･･", "〝", "〟", "※", "＜", "バン！", "＞",
-            "リポ", "。」", "激しい絵", "※", "ドンパチ", "･･･", "ON", "ＶＯ", "VO", "0R", "9R0", "&#8203;``&#8203;``&#8203;``【oaicite:0】``&#8203;``&#8203;``&#8203;",
-            "全部見せ", "白素材", "Ｎ", "白パカ", "･･･」", "／", "/", "①", "※", "テレピック", "提供：", "画見せ", "。」", "フォロー強調", "場所時間", "⭐︎", "♪"
-        ];
+        function compareAndReplace() {
+            const text1 = document.getElementById('text1').value.split('\n');
+            const text2 = document.getElementById('text2').value.split('\n');
+            const maxLength = Math.max(text1.length, text2.length);
+            let result = '';
 
-        function processText() {
-            let text = document.getElementById('inputText').value;
+            for (let i = 0; i < maxLength; i++) {
+                const line1 = text1[i] || '';
+                let line2 = text2[i] || '';
+                
+                // Apply replacement only to the right-side text
+                for (let j = 0; j < findList.length; j++) {
+                    const regex = new RegExp(findList[j], 'g');
+                    line2 = line2.replace(regex, replaceList[j]);
+                }
 
-            // Remove words
-            wordsToRemove.forEach(word => {
-                const regex = new RegExp(word, 'g');
-                text = text.replace(regex, '');
-            });
-
-            // Replace words
-            for (let i = 0; i < findList.length; i++) {
-                const regex = new RegExp(findList[i], 'g');
-                text = text.replace(regex, replaceList[i]);
+                if (line1 !== line2) {
+                    result += `Line ${i + 1}:\nLeft: ${line1}\nRight: <span class="highlight">${line2}</span>\n\n`;
+                }
             }
 
-            document.getElementById('output').innerText = text;
+            document.getElementById('output').innerHTML = result || 'No differences found.';
         }
     </script>
 </body>
