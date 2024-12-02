@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Combined Text Comparison and Replace Tool</title>
+    <title>Text Comparison Tool</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -16,11 +16,10 @@
         }
         .container {
             display: flex;
-            justify-content: space-between;
             gap: 20px;
         }
         textarea {
-            width: 100%;
+            width: 50%;
             height: 200px;
             font-size: 16px;
             padding: 10px;
@@ -30,7 +29,7 @@
         }
         button {
             display: block;
-            margin: 10px auto;
+            margin: 20px auto;
             padding: 10px 20px;
             background-color: #007bff;
             color: white;
@@ -41,87 +40,77 @@
         button:hover {
             background-color: #0056b3;
         }
+        .results {
+            display: flex;
+            gap: 20px;
+        }
         .output {
-            width: 100%;
-            background: #272822;
-            color: #f8f8f2;
+            width: 50%;
+            background: #fff;
+            color: #000;
             padding: 15px;
+            border: 1px solid #ccc;
             border-radius: 5px;
             overflow-x: auto;
             font-size: 14px;
-            height: 200px;
+            height: auto;
             white-space: pre-wrap;
             box-sizing: border-box;
         }
         .highlight {
-            color: red;
+            background-color: yellow;
             font-weight: bold;
         }
     </style>
 </head>
 <body>
-    <h1>Combined Text Comparison and Replace Tool</h1>
+    <h1>Text Comparison Tool</h1>
     <div class="container">
         <textarea id="text1" placeholder="Enter left text here..."></textarea>
         <textarea id="text2" placeholder="Enter right text here..."></textarea>
     </div>
-    <button onclick="compareAndReplace()">Compare and Replace</button>
-    <div class="output" id="output"></div>
+    <button onclick="compareTexts()">Compare</button>
+    <div class="results">
+        <div class="output" id="output1"></div>
+        <div class="output" id="output2"></div>
+    </div>
 
     <script>
-        const findList = [
-            "呼びかけ", "あまり", "パーセント", "（：「", "Q", "ており、", "、：「", "火を付け",
-            "ケガ", "前月", "わか", "こうした中", "とした上で", "「", "ON", "m", "ｍ", "mm", "ｍｍ", "cm", "ｃｍ", "km", "ｋｍ", "g", "ｇ", "kg", "ｋｇ", "メートルメートル", "ｋメートル", "kメートル",
-            "きょう", "あす", "あさって", "きのう", "おとい", "労う", "おくそく", "刈まったく",
-            "一際", "綺麗", "1つ", "ひとつ", "嬉しい", "および", "いろんな", "いろいろ", "さまざま",
-            "もともと", "おそれ", "して欲しい", "溜め", "貯め", "ヶ", "たとえば", "円にのぼる",
-            "あきらか", "疑いがもたれ", "気づき", "ヵ", "37、", "「（Q..", "「（：「（Q.）.",
-            "日日", "そんな中", "法案成立", "合併会社", "稲刈り", "荻野公介", "自動列車停止措置",
-            "章を受賞", "実行支配", "場所時間", "賑", "ある中", "遭難にあった", "場所時間", "ノイズ",
-            "ひとつ", "ずらい", "カルフォルニア", "々月", "ヶ", "？", "羽鳥慎一モーニングショー",
-            "。」", "刺身", "GW", "美味しい", "剥", "由比ヶ浜", "ご飯", "セブンイレブン",
-            "対峙", "首相指名選挙", "決戦投票", "近づ",
-            "揃う", "見出す", "年内に決着をつけるのがベスト。実際にどうなるのか、まだ見えない"
-        ];
-
-        const replaceList = [
-            "呼び掛け", "余り", "％", "（「", "：「（Q.", "ていて、", "、「", "火をつけ",
-            "けが", "先月", "分か", "こうしたなか、", "としたうえで", "「", "⭐︎", "メートル", "メートル",
-            "ミリ", "ミリ", "センチ", "センチ", "キロ", "キロ", "グラム", "グラム", "キログラム", "キログラム", "ミリ", "キロ", "キロ",
-            "きょう", "あす", "あさって", "きのう", "おとい", "ねぎらう",
-            "臆測", "全く", "ひときわ", "きれい", "一つ", "ひとつ", "うれしい", "及び", "色んな",
-            "色々", "様々", "元々", "恐れ", "～してほしい", "ため", "ため", "ケ", "例えば、",
-            "円に上る", "明らか", "疑いが持たれ", "気付き", "カ", "37.", "「（Q.）",
-            "：「（Q.）", "日", "こうしたなか", "法成立", "合併会社", "稲刈り", "萩野公介",
-            "自動列車停止装置", "章を受章", "実効支配", "。", "にぎ", "あるなか", "遭難に遭った",
-            "、", "、", "一つ", "づらい", "カリフォルニア", "カ月", "ケ", "。",
-            "羽鳥慎一 モーニングショー", "」", "刺し身", "ゴールデンウィーク", "おいしい", "む", "由比ガ浜", "ごはん", "セブンーイレブン",
-            "対峙（たいじ）", "総理指名選挙", "決選投票", "近付",
-            "そろう", "見いだす", "年内に決着をつけるのがベストだが、実際にどうなるのか、まだ見えない"
-        ];
-
-        function compareAndReplace() {
+        function compareTexts() {
             const text1 = document.getElementById('text1').value.split('\n');
             const text2 = document.getElementById('text2').value.split('\n');
             const maxLength = Math.max(text1.length, text2.length);
-            let result = '';
+            const output1 = document.getElementById('output1');
+            const output2 = document.getElementById('output2');
+
+            let result1 = '';
+            let result2 = '';
 
             for (let i = 0; i < maxLength; i++) {
                 const line1 = text1[i] || '';
-                let line2 = text2[i] || '';
-                
-                // Apply replacement only to the right-side text
-                for (let j = 0; j < findList.length; j++) {
-                    const regex = new RegExp(findList[j], 'g');
-                    line2 = line2.replace(regex, replaceList[j]);
+                const line2 = text2[i] || '';
+                let highlightedLine1 = '';
+                let highlightedLine2 = '';
+
+                for (let j = 0; j < Math.max(line1.length, line2.length); j++) {
+                    const char1 = line1[j] || '';
+                    const char2 = line2[j] || '';
+
+                    if (char1 !== char2) {
+                        highlightedLine1 += `<span class="highlight">${char1 || ' '}</span>`;
+                        highlightedLine2 += `<span class="highlight">${char2 || ' '}</span>`;
+                    } else {
+                        highlightedLine1 += char1;
+                        highlightedLine2 += char2;
+                    }
                 }
 
-                if (line1 !== line2) {
-                    result += `Line ${i + 1}:\nLeft: ${line1}\nRight: <span class="highlight">${line2}</span>\n\n`;
-                }
+                result1 += `${highlightedLine1}\n`;
+                result2 += `${highlightedLine2}\n`;
             }
 
-            document.getElementById('output').innerHTML = result || 'No differences found.';
+            output1.innerHTML = result1 || 'No differences found in left text.';
+            output2.innerHTML = result2 || 'No differences found in right text.';
         }
     </script>
 </body>
