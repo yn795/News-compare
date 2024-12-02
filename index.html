@@ -56,6 +56,10 @@
             white-space: pre-wrap;
             box-sizing: border-box;
         }
+        .highlight {
+            background-color: yellow;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -84,13 +88,17 @@
                 const char1 = text1[i] || '';
                 const char2 = text2[i] || '';
 
-                // Display characters directly without highlighting if they match
-                result1 += char1;
-                result2 += char2;
+                if (char1 !== char2) {
+                    result1 += `<span class="highlight">${char1 || ' '}</span>`;
+                    result2 += `<span class="highlight">${char2 || ' '}</span>`;
+                } else {
+                    result1 += char1;
+                    result2 += char2;
+                }
             }
 
-            output1.innerText = result1 || 'No content in the first text.';
-            output2.innerText = result2 || 'No content in the second text.';
+            output1.innerHTML = result1 || 'No content in the first text.';
+            output2.innerHTML = result2 || 'No content in the second text.';
         }
     </script>
 </body>
