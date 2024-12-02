@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Text Comparison Tool</title>
+    <title>Character-Level Text Comparison</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -53,7 +53,6 @@
             border-radius: 5px;
             overflow-x: auto;
             font-size: 14px;
-            height: auto;
             white-space: pre-wrap;
             box-sizing: border-box;
         }
@@ -64,10 +63,10 @@
     </style>
 </head>
 <body>
-    <h1>Text Comparison Tool</h1>
+    <h1>Character-Level Text Comparison</h1>
     <div class="container">
-        <textarea id="text1" placeholder="Enter left text here..."></textarea>
-        <textarea id="text2" placeholder="Enter right text here..."></textarea>
+        <textarea id="text1" placeholder="Enter first text here..."></textarea>
+        <textarea id="text2" placeholder="Enter second text here..."></textarea>
     </div>
     <button onclick="compareTexts()">Compare</button>
     <div class="results">
@@ -77,8 +76,8 @@
 
     <script>
         function compareTexts() {
-            const text1 = document.getElementById('text1').value.split('\n');
-            const text2 = document.getElementById('text2').value.split('\n');
+            const text1 = document.getElementById('text1').value;
+            const text2 = document.getElementById('text2').value;
             const maxLength = Math.max(text1.length, text2.length);
             const output1 = document.getElementById('output1');
             const output2 = document.getElementById('output2');
@@ -87,30 +86,20 @@
             let result2 = '';
 
             for (let i = 0; i < maxLength; i++) {
-                const line1 = text1[i] || '';
-                const line2 = text2[i] || '';
-                let highlightedLine1 = '';
-                let highlightedLine2 = '';
+                const char1 = text1[i] || '';
+                const char2 = text2[i] || '';
 
-                for (let j = 0; j < Math.max(line1.length, line2.length); j++) {
-                    const char1 = line1[j] || '';
-                    const char2 = line2[j] || '';
-
-                    if (char1 !== char2) {
-                        highlightedLine1 += `<span class="highlight">${char1 || ' '}</span>`;
-                        highlightedLine2 += `<span class="highlight">${char2 || ' '}</span>`;
-                    } else {
-                        highlightedLine1 += char1;
-                        highlightedLine2 += char2;
-                    }
+                if (char1 !== char2) {
+                    result1 += `<span class="highlight">${char1 || ' '}</span>`;
+                    result2 += `<span class="highlight">${char2 || ' '}</span>`;
+                } else {
+                    result1 += char1;
+                    result2 += char2;
                 }
-
-                result1 += `${highlightedLine1}\n`;
-                result2 += `${highlightedLine2}\n`;
             }
 
-            output1.innerHTML = result1 || 'No differences found in left text.';
-            output2.innerHTML = result2 || 'No differences found in right text.';
+            output1.innerHTML = result1 || 'No differences found in the first text.';
+            output2.innerHTML = result2 || 'No differences found in the second text.';
         }
     </script>
 </body>
