@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Character-Level Text Comparison</title>
+    <title>Highlight Differences in Text</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -63,7 +63,7 @@
     </style>
 </head>
 <body>
-    <h1>Character-Level Text Comparison</h1>
+    <h1>Highlight Differences in Text</h1>
     <div class="container">
         <textarea id="text1" placeholder="Enter first text here..."></textarea>
         <textarea id="text2" placeholder="Enter second text here..."></textarea>
@@ -97,8 +97,8 @@
                 }
             }
 
-            output1.innerHTML = result1 || 'No content in the first text.';
-            output2.innerHTML = result2 || 'No content in the second text.';
+            output1.innerHTML = result1 || 'No differences found.';
+            output2.innerHTML = result2 || 'No differences found.';
         }
     </script>
 </body>
