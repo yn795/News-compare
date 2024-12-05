@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Text Comparison Tool</title>
+    <title>Enhanced Text Comparison Tool</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -16,10 +16,11 @@
         }
         .container {
             display: flex;
+            justify-content: space-between;
             gap: 20px;
         }
         textarea {
-            width: 50%;
+            width: 100%;
             height: 200px;
             font-size: 16px;
             padding: 10px;
@@ -29,7 +30,7 @@
         }
         button {
             display: block;
-            margin: 20px auto;
+            margin: 10px auto;
             padding: 10px 20px;
             background-color: #007bff;
             color: white;
@@ -40,79 +41,103 @@
         button:hover {
             background-color: #0056b3;
         }
-        .results {
-            display: flex;
-            gap: 20px;
-        }
         .output {
-            width: 50%;
-            background: #fff;
-            color: #000;
+            width: 100%;
+            background: #272822;
+            color: #f8f8f2;
             padding: 15px;
-            border: 1px solid #ccc;
             border-radius: 5px;
             overflow-x: auto;
             font-size: 14px;
+            height: 300px;
             white-space: pre-wrap;
             box-sizing: border-box;
         }
         .highlight {
-            background-color: yellow;
+            color: red;
             font-weight: bold;
         }
     </style>
 </head>
 <body>
-    <h1>Text Comparison Tool</h1>
+    <h1>Enhanced Text Comparison Tool</h1>
     <div class="container">
-        <textarea id="text1" placeholder="Enter the first text here..."></textarea>
-        <textarea id="text2" placeholder="Enter the second text here..."></textarea>
+        <textarea id="text1" placeholder="Enter left text here..."></textarea>
+        <textarea id="text2" placeholder="Enter right text here..."></textarea>
     </div>
-    <button onclick="compareTexts()">Compare</button>
-    <div class="results">
-        <div class="output" id="output1"></div>
-        <div class="output" id="output2"></div>
-    </div>
+    <button onclick="compareAndProcess()">Compare and Process</button>
+    <div class="output" id="output"></div>
 
     <script>
-        function compareTexts() {
-            const text1 = document.getElementById('text1').value.split('\n');
-            const text2 = document.getElementById('text2').value.split('\n');
-            const output1 = document.getElementById('output1');
-            const output2 = document.getElementById('output2');
+        const findList = [
+            "呼びかけ", "あまり", "パーセント", "（：「", "Q", "ており、", "、：「", "火を付け",
+            "ケガ", "前月", "わか", "こうした中", "とした上で", "「", "ON", "m", "ｍ", "mm", "ｍｍ", "cm", "ｃｍ",
+            "km", "ｋｍ", "g", "ｇ", "kg", "ｋｇ", "メートルメートル", "ｋメートル", "きょう", "あす", "あさって", "きのう",
+            "ひとつ", "さまざま", "おそれ", "ヵ", "疑いがもたれ", "法案成立", "美味しい", "セブンイレブン"
+        ];
 
-            let result1 = '';
-            let result2 = '';
+        const replaceList = [
+            "呼び掛け", "余り", "％", "（「", "：「（Q.", "ていて、", "、「", "火をつけ",
+            "けが", "先月", "分か", "こうしたなか、", "としたうえで", "「", "⭐︎", "メートル", "メートル",
+            "ミリ", "ミリ", "センチ", "センチ", "キロ", "キロ", "グラム", "グラム", "キログラム", "キログラム",
+            "ミリ", "キロ", "きょう", "あす", "あさって", "きのう", "一つ", "様々", "恐れ", "カ", 
+            "疑いが持たれ", "法成立", "おいしい", "セブンーイレブン"
+        ];
 
-            const maxLines = Math.max(text1.length, text2.length);
+        const furiganaReplacements = {
+            "にも関わらず": "にもかかわらず",
+            "蒼白": "蒼白（そうはく）",
+            "誹謗": "誹謗（ひぼう）",
+            "執拗": "執拗（しつよう）",
+            "躊躇": "躊躇（ちゅうちょ）",
+            "蔓延": "蔓延（まんえん）",
+            "喧伝": "喧伝（けんでん）",
+            "愕然": "愕然（がくぜん）",
+            "牽制": "牽制（けんせい）"
+        };
 
-            for (let i = 0; i < maxLines; i++) {
-                const line1 = text1[i] || '';
-                const line2 = text2[i] || '';
-                const maxLength = Math.max(line1.length, line2.length);
+        function normalizeText(text) {
+            // スラッシュや余計なスペース削除
+            text = text.replace(/\//g, "").replace(/／/g, "").replace(/\s+/g, "");
 
-                let lineResult1 = '';
-                let lineResult2 = '';
-
-                for (let j = 0; j < maxLength; j++) {
-                    const char1 = line1[j] || '';
-                    const char2 = line2[j] || '';
-
-                    if (char1 !== char2) {
-                        lineResult1 += `<span class="highlight">${char1 || ' '}</span>`;
-                        lineResult2 += `<span class="highlight">${char2 || ' '}</span>`;
-                    } else {
-                        lineResult1 += char1;
-                        lineResult2 += char2;
-                    }
-                }
-
-                result1 += lineResult1 + '\n';
-                result2 += lineResult2 + '\n';
+            // 置換処理
+            for (let i = 0; i < findList.length; i++) {
+                const regex = new RegExp(findList[i], "g");
+                text = text.replace(regex, replaceList[i]);
             }
 
-            output1.innerHTML = result1 || 'No content in the first text.';
-            output2.innerHTML = result2 || 'No content in the second text.';
+            // 振り仮名の追加
+            for (const [key, value] of Object.entries(furiganaReplacements)) {
+                const regex = new RegExp(key, "g");
+                text = text.replace(regex, value);
+            }
+
+            return text;
+        }
+
+        function compareAndProcess() {
+            const text1 = document.getElementById("text1").value.split("\n");
+            const text2 = document.getElementById("text2").value.split("\n");
+
+            const maxLength = Math.max(text1.length, text2.length);
+            let result = "";
+
+            for (let i = 0; i < maxLength; i++) {
+                const originalLeft = text1[i] || "";
+                const originalRight = text2[i] || "";
+
+                // Normalize and process the text
+                const processedLeft = normalizeText(originalLeft);
+                const processedRight = normalizeText(originalRight);
+
+                if (processedLeft !== processedRight) {
+                    result += `Line ${i + 1}:\nLeft: <span class="highlight">${processedLeft}</span>\nRight: <span class="highlight">${processedRight}</span>\n\n`;
+                } else {
+                    result += `Line ${i + 1}:\nLeft: ${processedLeft}\nRight: ${processedRight}\n\n`;
+                }
+            }
+
+            document.getElementById("output").innerHTML = result || "No differences found.";
         }
     </script>
 </body>
