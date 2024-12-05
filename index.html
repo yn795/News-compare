@@ -79,29 +79,40 @@
     </div>
 
     <script>
-        // テキスト正規化関数（改行を無視する）
-        function normalizeTextIgnoreNewlines(text) {
-            return text
-                .replace(/\r?\n/g, "") // 改行を削除
-                .trim(); // 前後の空白を削除
+        // テキスト正規化関数
+        function normalizeText(text) {
+            return text.trim();
         }
 
-        // 差分をハイライトする関数（スペースを考慮しつつ比較）
+        // 差分をハイライトする関数（単語単位で比較）
         function highlightDifferences(original, modified) {
-            const normalizedOriginal = normalizeTextIgnoreNewlines(original);
-            const normalizedModified = normalizeTextIgnoreNewlines(modified);
+            const originalWords = original.split(/\s+/); // 単語ごとに分割
+            const modifiedWords = modified.split(/\s+/);
 
-            if (normalizedOriginal === normalizedModified) {
-                return {
-                    original: original,
-                    modified: modified
-                };
-            } else {
-                return {
-                    original: `<span class="highlight">${original}</span>`,
-                    modified: `<span class="highlight">${modified}</span>`
-                };
+            const maxLength = Math.max(originalWords.length, modifiedWords.length);
+
+            let highlightedOriginal = "";
+            let highlightedModified = "";
+
+            for (let i = 0; i < maxLength; i++) {
+                const originalWord = originalWords[i] || ""; // 空の場合空文字列
+                const modifiedWord = modifiedWords[i] || "";
+
+                if (originalWord === modifiedWord) {
+                    // 同じ単語はそのまま表示
+                    highlightedOriginal += `${originalWord} `;
+                    highlightedModified += `${modifiedWord} `;
+                } else {
+                    // 異なる単語はハイライト表示
+                    highlightedOriginal += `<span class="highlight">${originalWord}</span> `;
+                    highlightedModified += `<span class="highlight">${modifiedWord}</span> `;
+                }
             }
+
+            return {
+                original: highlightedOriginal.trim(),
+                modified: highlightedModified.trim()
+            };
         }
 
         // テキスト比較と結果表示
@@ -109,12 +120,31 @@
             const text1 = document.getElementById("text1").value.trim();
             const text2 = document.getElementById("text2").value.trim();
 
-            // 改行を無視したテキスト全体を比較
-            const { original, modified } = highlightDifferences(text1, text2);
+            // 行ごとに分割
+            const lines1 = text1.split("\n").filter(line => line.trim() !== ""); // 空行を除外
+            const lines2 = text2.split("\n").filter(line => line.trim() !== ""); // 空行を除外
 
-            // 出力に反映
-            document.getElementById("text3").innerHTML = original;
-            document.getElementById("text4").innerHTML = modified;
+            const maxLines = Math.max(lines1.length, lines2.length);
+
+            let text3Content = "";
+            let text4Content = "";
+
+            for (let i = 0; i < maxLines; i++) {
+                const line1 = lines1[i] || "";
+                const line2 = lines2[i] || "";
+
+                if (line1 === "" && line2 === "") {
+                    continue; // 両方が空行ならスキップ
+                }
+
+                const { original, modified } = highlightDifferences(line1, line2);
+
+                text3Content += `${original}\n`;
+                text4Content += `${modified}\n`;
+            }
+
+            document.getElementById("text3").innerHTML = text3Content.trim();
+            document.getElementById("text4").innerHTML = text4Content.trim();
         }
     </script>
 </body>
