@@ -79,52 +79,17 @@
     </div>
 
     <script>
-        // テキスト処理のための置換リスト
-        const findList = [
-            "呼びかけ", "あまり", "パーセント", "（：「", "Q", "ており、", "、：「", "火を付け",
-            "ケガ", "前月", "わか", "こうした中", "とした上で", "「", "ON", "m", "ｍ", "mm", "ｍｍ", "cm", "ｃｍ",
-            "km", "ｋｍ", "g", "ｇ", "kg", "ｋｇ", "メートルメートル", "ｋメートル", "きょう", "あす", "あさって", "きのう",
-            "ひとつ", "さまざま", "おそれ", "ヵ", "疑いがもたれ", "法案成立", "美味しい", "セブンイレブン"
-        ];
-
-        const replaceList = [
-            "呼び掛け", "余り", "％", "（「", "：「（Q.", "ていて、", "、「", "火をつけ",
-            "けが", "先月", "分か", "こうしたなか、", "としたうえで", "「", "⭐︎", "メートル", "メートル",
-            "ミリ", "ミリ", "センチ", "センチ", "キロ", "キロ", "グラム", "グラム", "キログラム", "キログラム",
-            "ミリ", "キロ", "きょう", "あす", "あさって", "きのう", "一つ", "様々", "恐れ", "カ", 
-            "疑いが持たれ", "法成立", "おいしい", "セブンーイレブン"
-        ];
-
-        const keywordTags = {
-            "南海トラフ": "タグ: 南海トラフ2024",
-            "深セン": "深セン日本人男児死亡",
-            "ヒズボラ": "イスラエルとイラン2024",
-            "斎藤元彦": "兵庫　兵庫県知事"
-        };
-
+        // テキスト正規化関数
         function normalizeText(text) {
-            return text.replace(/\s+/g, "").trim();
+            return text
+                .replace(/\s+/g, "") // すべての空白を削除
+                .replace(/[　]/g, "") // 全角スペースを削除
+                .trim(); // 前後の空白を削除
         }
 
-        function processText(text) {
-            // テキストを正規化して置換処理
-            for (let i = 0; i < findList.length; i++) {
-                const regex = new RegExp(findList[i], "g");
-                text = text.replace(regex, replaceList[i]);
-            }
-
-            // キーワードタグ追加
-            for (const [keyword, tag] of Object.entries(keywordTags)) {
-                if (text.includes(keyword)) {
-                    text += `\n${tag}`;
-                }
-            }
-
-            return text;
-        }
-
+        // 差分をハイライトする関数
         function highlightDifferences(original, modified) {
-            // 全体を正規化して比較
+            // 正規化された内容を比較
             const normalizedOriginal = normalizeText(original);
             const normalizedModified = normalizeText(modified);
 
@@ -141,18 +106,32 @@
             }
         }
 
+        // テキスト比較と結果表示
         function compareAndProcess() {
             const text1 = document.getElementById("text1").value.trim();
             const text2 = document.getElementById("text2").value.trim();
 
-            // テキスト処理を実行
-            const processedText1 = processText(text1);
-            const processedText2 = processText(text2);
+            // 行ごとに分割
+            const lines1 = text1.split("\n");
+            const lines2 = text2.split("\n");
 
-            const { original, modified } = highlightDifferences(processedText1, processedText2);
+            const maxLines = Math.max(lines1.length, lines2.length);
 
-            document.getElementById("text3").innerHTML = original;
-            document.getElementById("text4").innerHTML = modified;
+            let text3Content = "";
+            let text4Content = "";
+
+            for (let i = 0; i < maxLines; i++) {
+                const line1 = lines1[i] || "";
+                const line2 = lines2[i] || "";
+
+                const { original, modified } = highlightDifferences(line1, line2);
+
+                text3Content += `${original}\n`;
+                text4Content += `${modified}\n`;
+            }
+
+            document.getElementById("text3").innerHTML = text3Content;
+            document.getElementById("text4").innerHTML = text4Content;
         }
     </script>
 </body>
