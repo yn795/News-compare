@@ -36,9 +36,10 @@
         }
         .output {
             width: 100%;
-            background: #272822;
-            color: #f8f8f2;
+            background: #ffffff; /* 背景を白に設定 */
+            color: #000000; /* 文字色を黒に設定 */
             padding: 15px;
+            border: 1px solid #ccc;
             border-radius: 5px;
             overflow-y: auto;
             font-size: 14px;
@@ -47,8 +48,8 @@
             box-sizing: border-box;
         }
         .highlight {
-            background-color: yellow;
-            font-weight: bold;
+            font-weight: bold; /* 太字で強調 */
+            color: #ff4500; /* 強調文字をオレンジ色に設定 */
         }
         button {
             display: block;
@@ -123,30 +124,21 @@
         }
 
         function highlightDifferences(original, modified) {
-            const originalWords = original.split(" ");
-            const modifiedWords = modified.split(" ");
-            const maxLength = Math.max(originalWords.length, modifiedWords.length);
+            // 全体を正規化して比較
+            const normalizedOriginal = normalizeText(original);
+            const normalizedModified = normalizeText(modified);
 
-            let highlightedOriginal = "";
-            let highlightedModified = "";
-
-            for (let i = 0; i < maxLength; i++) {
-                const originalWord = originalWords[i] || "";
-                const modifiedWord = modifiedWords[i] || "";
-
-                if (normalizeText(originalWord) !== normalizeText(modifiedWord)) {
-                    highlightedOriginal += `<span class="highlight">${originalWord || "(empty)"}</span> `;
-                    highlightedModified += `<span class="highlight">${modifiedWord || "(empty)"}</span> `;
-                } else {
-                    highlightedOriginal += `${originalWord} `;
-                    highlightedModified += `${modifiedWord} `;
-                }
+            if (normalizedOriginal === normalizedModified) {
+                return {
+                    original: original,
+                    modified: modified
+                };
+            } else {
+                return {
+                    original: `<span class="highlight">${original}</span>`,
+                    modified: `<span class="highlight">${modified}</span>`
+                };
             }
-
-            return {
-                original: highlightedOriginal.trim(),
-                modified: highlightedModified.trim()
-            };
         }
 
         function compareAndProcess() {
@@ -157,26 +149,10 @@
             const processedText1 = processText(text1);
             const processedText2 = processText(text2);
 
-            const lines1 = processedText1.split("\n");
-            const lines2 = processedText2.split("\n");
+            const { original, modified } = highlightDifferences(processedText1, processedText2);
 
-            const maxLines = Math.max(lines1.length, lines2.length);
-
-            let text3Content = "";
-            let text4Content = "";
-
-            for (let i = 0; i < maxLines; i++) {
-                const line1 = lines1[i] || "";
-                const line2 = lines2[i] || "";
-
-                const { original, modified } = highlightDifferences(line1, line2);
-
-                text3Content += `${original}\n`;
-                text4Content += `${modified}\n`;
-            }
-
-            document.getElementById("text3").innerHTML = text3Content;
-            document.getElementById("text4").innerHTML = text4Content;
+            document.getElementById("text3").innerHTML = original;
+            document.getElementById("text4").innerHTML = modified;
         }
     </script>
 </body>
