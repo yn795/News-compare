@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enhanced Text Comparison Tool</title>
+    <title>Enhanced Text Comparison and Processing Tool</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -18,15 +18,37 @@
             display: flex;
             justify-content: space-between;
             gap: 20px;
+            margin-bottom: 20px;
         }
         textarea {
             width: 100%;
-            height: 200px;
+            height: 150px;
             font-size: 16px;
             padding: 10px;
             border: 1px solid #ccc;
             border-radius: 5px;
             box-sizing: border-box;
+        }
+        .output-container {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+        }
+        .output {
+            width: 100%;
+            background: #272822;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-y: auto;
+            font-size: 14px;
+            height: 200px;
+            white-space: pre-wrap;
+            box-sizing: border-box;
+        }
+        .highlight {
+            background-color: yellow;
+            font-weight: bold;
         }
         button {
             display: block;
@@ -41,34 +63,22 @@
         button:hover {
             background-color: #0056b3;
         }
-        .output {
-            width: 100%;
-            background: #272822;
-            color: #f8f8f2;
-            padding: 15px;
-            border-radius: 5px;
-            overflow-x: auto;
-            font-size: 14px;
-            height: 300px;
-            white-space: pre-wrap;
-            box-sizing: border-box;
-        }
-        .highlight {
-            color: red;
-            font-weight: bold;
-        }
     </style>
 </head>
 <body>
-    <h1>Enhanced Text Comparison Tool</h1>
+    <h1>Enhanced Text Comparison and Processing Tool</h1>
     <div class="container">
-        <textarea id="text1" placeholder="Enter left text here..."></textarea>
-        <textarea id="text2" placeholder="Enter right text here..."></textarea>
+        <textarea id="text1" placeholder="Enter Text 1 here..."></textarea>
+        <textarea id="text2" placeholder="Enter Text 2 here..."></textarea>
     </div>
     <button onclick="compareAndProcess()">Compare and Process</button>
-    <div class="output" id="output"></div>
+    <div class="output-container">
+        <div class="output" id="text3"></div>
+        <div class="output" id="text4"></div>
+    </div>
 
     <script>
+        // テキスト処理のための置換リスト
         const findList = [
             "呼びかけ", "あまり", "パーセント", "（：「", "Q", "ており、", "、：「", "火を付け",
             "ケガ", "前月", "わか", "こうした中", "とした上で", "「", "ON", "m", "ｍ", "mm", "ｍｍ", "cm", "ｃｍ",
@@ -84,60 +94,89 @@
             "疑いが持たれ", "法成立", "おいしい", "セブンーイレブン"
         ];
 
-        const furiganaReplacements = {
-            "にも関わらず": "にもかかわらず",
-            "蒼白": "蒼白（そうはく）",
-            "誹謗": "誹謗（ひぼう）",
-            "執拗": "執拗（しつよう）",
-            "躊躇": "躊躇（ちゅうちょ）",
-            "蔓延": "蔓延（まんえん）",
-            "喧伝": "喧伝（けんでん）",
-            "愕然": "愕然（がくぜん）",
-            "牽制": "牽制（けんせい）"
+        const keywordTags = {
+            "南海トラフ": "タグ: 南海トラフ2024",
+            "深セン": "深セン日本人男児死亡",
+            "ヒズボラ": "イスラエルとイラン2024",
+            "斎藤元彦": "兵庫　兵庫県知事"
         };
 
         function normalizeText(text) {
-            // スラッシュや余計なスペース削除
-            text = text.replace(/\//g, "").replace(/／/g, "").replace(/\s+/g, "");
+            return text.replace(/\s+/g, "").trim();
+        }
 
-            // 置換処理
+        function processText(text) {
+            // テキストを正規化して置換処理
             for (let i = 0; i < findList.length; i++) {
                 const regex = new RegExp(findList[i], "g");
                 text = text.replace(regex, replaceList[i]);
             }
 
-            // 振り仮名の追加
-            for (const [key, value] of Object.entries(furiganaReplacements)) {
-                const regex = new RegExp(key, "g");
-                text = text.replace(regex, value);
+            // キーワードタグ追加
+            for (const [keyword, tag] of Object.entries(keywordTags)) {
+                if (text.includes(keyword)) {
+                    text += `\n${tag}`;
+                }
             }
 
             return text;
         }
 
-        function compareAndProcess() {
-            const text1 = document.getElementById("text1").value.split("\n");
-            const text2 = document.getElementById("text2").value.split("\n");
+        function highlightDifferences(original, modified) {
+            const originalWords = original.split(" ");
+            const modifiedWords = modified.split(" ");
+            const maxLength = Math.max(originalWords.length, modifiedWords.length);
 
-            const maxLength = Math.max(text1.length, text2.length);
-            let result = "";
+            let highlightedOriginal = "";
+            let highlightedModified = "";
 
             for (let i = 0; i < maxLength; i++) {
-                const originalLeft = text1[i] || "";
-                const originalRight = text2[i] || "";
+                const originalWord = originalWords[i] || "";
+                const modifiedWord = modifiedWords[i] || "";
 
-                // Normalize and process the text
-                const processedLeft = normalizeText(originalLeft);
-                const processedRight = normalizeText(originalRight);
-
-                if (processedLeft !== processedRight) {
-                    result += `Line ${i + 1}:\nLeft: <span class="highlight">${processedLeft}</span>\nRight: <span class="highlight">${processedRight}</span>\n\n`;
+                if (normalizeText(originalWord) !== normalizeText(modifiedWord)) {
+                    highlightedOriginal += `<span class="highlight">${originalWord || "(empty)"}</span> `;
+                    highlightedModified += `<span class="highlight">${modifiedWord || "(empty)"}</span> `;
                 } else {
-                    result += `Line ${i + 1}:\nLeft: ${processedLeft}\nRight: ${processedRight}\n\n`;
+                    highlightedOriginal += `${originalWord} `;
+                    highlightedModified += `${modifiedWord} `;
                 }
             }
 
-            document.getElementById("output").innerHTML = result || "No differences found.";
+            return {
+                original: highlightedOriginal.trim(),
+                modified: highlightedModified.trim()
+            };
+        }
+
+        function compareAndProcess() {
+            const text1 = document.getElementById("text1").value.trim();
+            const text2 = document.getElementById("text2").value.trim();
+
+            // テキスト処理を実行
+            const processedText1 = processText(text1);
+            const processedText2 = processText(text2);
+
+            const lines1 = processedText1.split("\n");
+            const lines2 = processedText2.split("\n");
+
+            const maxLines = Math.max(lines1.length, lines2.length);
+
+            let text3Content = "";
+            let text4Content = "";
+
+            for (let i = 0; i < maxLines; i++) {
+                const line1 = lines1[i] || "";
+                const line2 = lines2[i] || "";
+
+                const { original, modified } = highlightDifferences(line1, line2);
+
+                text3Content += `${original}\n`;
+                text4Content += `${modified}\n`;
+            }
+
+            document.getElementById("text3").innerHTML = text3Content;
+            document.getElementById("text4").innerHTML = text4Content;
         }
     </script>
 </body>
