@@ -79,19 +79,17 @@
     </div>
 
     <script>
-        // テキスト正規化関数
-        function normalizeText(text) {
+        // テキスト正規化関数（改行を無視する）
+        function normalizeTextIgnoreNewlines(text) {
             return text
-                .replace(/\s+/g, "") // すべての空白を削除
-                .replace(/[　]/g, "") // 全角スペースを削除
+                .replace(/\r?\n/g, "") // 改行を削除
                 .trim(); // 前後の空白を削除
         }
 
-        // 差分をハイライトする関数
+        // 差分をハイライトする関数（スペースを考慮しつつ比較）
         function highlightDifferences(original, modified) {
-            // 正規化された内容を比較
-            const normalizedOriginal = normalizeText(original);
-            const normalizedModified = normalizeText(modified);
+            const normalizedOriginal = normalizeTextIgnoreNewlines(original);
+            const normalizedModified = normalizeTextIgnoreNewlines(modified);
 
             if (normalizedOriginal === normalizedModified) {
                 return {
@@ -111,27 +109,12 @@
             const text1 = document.getElementById("text1").value.trim();
             const text2 = document.getElementById("text2").value.trim();
 
-            // 行ごとに分割
-            const lines1 = text1.split("\n");
-            const lines2 = text2.split("\n");
+            // 改行を無視したテキスト全体を比較
+            const { original, modified } = highlightDifferences(text1, text2);
 
-            const maxLines = Math.max(lines1.length, lines2.length);
-
-            let text3Content = "";
-            let text4Content = "";
-
-            for (let i = 0; i < maxLines; i++) {
-                const line1 = lines1[i] || "";
-                const line2 = lines2[i] || "";
-
-                const { original, modified } = highlightDifferences(line1, line2);
-
-                text3Content += `${original}\n`;
-                text4Content += `${modified}\n`;
-            }
-
-            document.getElementById("text3").innerHTML = text3Content;
-            document.getElementById("text4").innerHTML = text4Content;
+            // 出力に反映
+            document.getElementById("text3").innerHTML = original;
+            document.getElementById("text4").innerHTML = modified;
         }
     </script>
 </body>
