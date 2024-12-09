@@ -9,7 +9,7 @@
 <title>Enhanced difff《ﾃﾞｭﾌﾌ》</title>
 <script type='text/javascript'>
 //-->
-    // 差分を検出してハイライト
+    // 差分ハイライトロジック
     function highlightDifferences(text1, text2) {
         const words1 = text1.split(/\s+/);
         const words2 = text2.split(/\s+/);
@@ -26,9 +26,12 @@
             if (word1 === word2) {
                 highlighted1 += `${word1} `;
                 highlighted2 += `${word2} `;
-            } else {
+            } else if (word1 && word2) {
                 highlighted1 += `<span class="highlight-diff">${word1}</span> `;
                 highlighted2 += `<span class="highlight-diff">${word2}</span> `;
+            } else {
+                highlighted1 += `<span class="highlight-partial">${word1}</span> `;
+                highlighted2 += `<span class="highlight-partial">${word2}</span> `;
             }
         }
 
@@ -69,15 +72,13 @@
 </script>
 <style type='text/css'>
 <!--
-	* { font-family:verdana,arial,helvetica,sans-serif }
-	p,table,textarea,ul { font-size:10pt }
-	textarea { width:45%; height:200px; margin-bottom:10px; }
-	a  { color:#3366CC }
-	.k { color:black; text-decoration:none }
-	em { font-style:normal }
-	.highlight-diff { color:red; font-weight:bold; }
-	.highlight-partial { color:blue; font-weight:bold; }
-	.output { width:45%; border:1px solid #ddd; padding:10px; background:#f9f9f9; }
+    * { font-family: verdana, arial, helvetica, sans-serif }
+    p, table, textarea, ul { font-size: 10pt }
+    textarea { width: 45%; height: 200px; margin-bottom: 10px; }
+    a  { color: #3366CC }
+    .highlight-diff { color: red; font-weight: bold; }
+    .highlight-partial { color: blue; font-weight: bold; }
+    .output { width: 45%; border: 1px solid #ddd; padding: 10px; background: #f9f9f9; }
 -->
 </style>
 </head>
@@ -85,10 +86,10 @@
 <body>
     <h1>Enhanced difff《ﾃﾞｭﾌﾌ》</h1>
     <div style="display: flex; justify-content: space-between;">
-        <textarea id="text1" placeholder="Enter Text 1 here..."></textarea>
-        <textarea id="text2" placeholder="Enter Text 2 here..."></textarea>
+        <textarea id="text1" placeholder="テキスト1を入力してください"></textarea>
+        <textarea id="text2" placeholder="テキスト2を入力してください"></textarea>
     </div>
-    <button onclick="compareTexts()">Compare Texts</button>
+    <button onclick="compareTexts()">比較する</button>
     <div style="display: flex; justify-content: space-between;">
         <div id="output1" class="output"></div>
         <div id="output2" class="output"></div>
