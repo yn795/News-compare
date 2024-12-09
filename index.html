@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Search and Compare Text Tool</title>
+    <title>Refined Text Diff Tool</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -13,7 +13,6 @@
         }
         h1 {
             text-align: center;
-            margin-bottom: 20px;
         }
         .container {
             display: flex;
@@ -27,15 +26,6 @@
             padding: 10px;
             border: 1px solid #ddd;
             border-radius: 5px;
-            box-sizing: border-box;
-        }
-        input[type="text"] {
-            width: calc(100% - 22px);
-            font-size: 16px;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            margin-bottom: 20px;
         }
         button {
             display: block;
@@ -63,44 +53,71 @@
             height: 200px;
             overflow-y: auto;
             white-space: pre-wrap;
-            font-size: 14px;
         }
-        .highlight {
-            color: #d9534f;
+        .highlight-diff {
+            color: red;
             font-weight: bold;
+        }
+        .highlight-partial {
+            color: blue;
         }
     </style>
 </head>
 <body>
-    <h1>Search and Compare Text Tool</h1>
-    <input type="text" id="searchTerm" placeholder="Enter search term...">
+    <h1>Refined Text Diff Tool</h1>
     <div class="container">
         <textarea id="text1" placeholder="Enter Text 1 here..."></textarea>
         <textarea id="text2" placeholder="Enter Text 2 here..."></textarea>
     </div>
-    <button onclick="compareAndSearch()">Compare and Search</button>
+    <button onclick="compareTexts()">Compare Texts</button>
     <div class="output-container">
         <div class="output" id="output1"></div>
         <div class="output" id="output2"></div>
     </div>
 
     <script>
-        // ハイライトのロジック
-        function highlightText(text, searchTerm) {
-            if (!searchTerm) return text;
-            const regex = new RegExp(`(${searchTerm})`, 'gi');
-            return text.replace(regex, '<span class="highlight">$1</span>');
+        function compareTexts() {
+            const text1 = document.getElementById("text1").value.split("\n");
+            const text2 = document.getElementById("text2").value.split("\n");
+
+            const maxLength = Math.max(text1.length, text2.length);
+
+            let result1 = "";
+            let result2 = "";
+
+            for (let i = 0; i < maxLength; i++) {
+                const line1 = text1[i] || "";
+                const line2 = text2[i] || "";
+
+                if (line1 === line2) {
+                    // 完全一致
+                    result1 += `${line1}\n`;
+                    result2 += `${line2}\n`;
+                } else if (line1 && line2) {
+                    // 部分一致または部分的な違い
+                    const { highlighted1, highlighted2 } = highlightDifferences(line1, line2);
+                    result1 += `${highlighted1}\n`;
+                    result2 += `${highlighted2}\n`;
+                } else {
+                    // 完全に異なる
+                    result1 += `<span class="highlight-partial">${line1}</span>\n`;
+                    result2 += `<span class="highlight-partial">${line2}</span>\n`;
+                }
+            }
+
+            document.getElementById("output1").innerHTML = result1.trim();
+            document.getElementById("output2").innerHTML = result2.trim();
         }
 
-        // 差分ハイライト
-        function highlightDifferences(text1, text2) {
-            const words1 = text1.split(/\s+/);
-            const words2 = text2.split(/\s+/);
+        // 差分ハイライトのロジック
+        function highlightDifferences(line1, line2) {
+            const words1 = line1.split(/\s+/);
+            const words2 = line2.split(/\s+/);
+
+            const maxLength = Math.max(words1.length, words2.length);
 
             let highlighted1 = "";
             let highlighted2 = "";
-
-            const maxLength = Math.max(words1.length, words2.length);
 
             for (let i = 0; i < maxLength; i++) {
                 const word1 = words1[i] || "";
@@ -110,40 +127,12 @@
                     highlighted1 += `${word1} `;
                     highlighted2 += `${word2} `;
                 } else {
-                    highlighted1 += `<span class="highlight">${word1}</span> `;
-                    highlighted2 += `<span class="highlight">${word2}</span> `;
+                    highlighted1 += `<span class="highlight-diff">${word1}</span> `;
+                    highlighted2 += `<span class="highlight-diff">${word2}</span> `;
                 }
             }
 
             return { highlighted1: highlighted1.trim(), highlighted2: highlighted2.trim() };
-        }
-
-        // 比較と検索
-        function compareAndSearch() {
-            const searchTerm = document.getElementById("searchTerm").value.trim();
-            const text1 = document.getElementById("text1").value.trim();
-            const text2 = document.getElementById("text2").value.trim();
-
-            const lines1 = text1.split("\n");
-            const lines2 = text2.split("\n");
-
-            const maxLines = Math.max(lines1.length, lines2.length);
-
-            let result1 = "";
-            let result2 = "";
-
-            for (let i = 0; i < maxLines; i++) {
-                const line1 = lines1[i] || "";
-                const line2 = lines2[i] || "";
-
-                const { highlighted1, highlighted2 } = highlightDifferences(line1, line2);
-
-                result1 += `${highlightText(highlighted1, searchTerm)}\n`;
-                result2 += `${highlightText(highlighted2, searchTerm)}\n`;
-            }
-
-            document.getElementById("output1").innerHTML = result1.trim();
-            document.getElementById("output2").innerHTML = result2.trim();
         }
     </script>
 </body>
