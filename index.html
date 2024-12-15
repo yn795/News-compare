@@ -1,107 +1,118 @@
-<!DOCTYPE HTML PUBLIC '-//W3C//DTD HTML 4.01 Transitional//EN'>
+<!DOCTYPE html>
 <html lang="ja">
 
 <head>
-    <meta http-equiv='Content-Type' content='text/html; charset=utf-8'>
-    <meta name='author' content='ChatGPT'>
-    <title>Enhanced Text Comparison Tool</title>
-    <script type='text/javascript'>
-        // 改行・空白を無視した差分比較ロジック
-        function getNormalizedText(text) {
-            // 改行と余分な空白を統一（1つのスペースに置換）
-            return text.replace(/\s+/g, ' ').trim();
-        }
-
-        function getCharDifferences(text1, text2) {
-            const normalized1 = getNormalizedText(text1);
-            const normalized2 = getNormalizedText(text2);
-
-            const len1 = normalized1.length;
-            const len2 = normalized2.length;
-
-            let result1 = '';
-            let result2 = '';
-
-            let i = 0, j = 0;
-
-            while (i < len1 || j < len2) {
-                if (i < len1 && j < len2 && normalized1[i] === normalized2[j]) {
-                    // 一致する文字
-                    result1 += normalized1[i];
-                    result2 += normalized2[j];
-                    i++;
-                    j++;
-                } else {
-                    if (i < len1) {
-                        // text1にしかない文字を強調
-                        result1 += `<span class="highlight-diff">${normalized1[i]}</span>`;
-                        i++;
-                    }
-                    if (j < len2) {
-                        // text2にしかない文字を強調
-                        result2 += `<span class="highlight-diff">${normalized2[j]}</span>`;
-                        j++;
-                    }
-                }
-            }
-            return { highlighted1: result1, highlighted2: result2 };
-        }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>High-Performance Text Comparison</title>
+    <script>
+        // 非同期処理用のWorker生成
+        let worker;
 
         function compareTexts() {
-            const text1 = document.getElementById("text1").value.trim();
-            const text2 = document.getElementById("text2").value.trim();
+            const text1 = document.getElementById("text1").value;
+            const text2 = document.getElementById("text2").value;
 
-            // オリジナルを維持しながら比較用の正規化を実施
-            const { highlighted1, highlighted2 } = getCharDifferences(text1, text2);
+            // Workerが未生成なら作成
+            if (!worker) {
+                worker = new Worker(URL.createObjectURL(new Blob([`
+                    onmessage = function (e) {
+                        const { text1, text2 } = e.data;
 
-            document.getElementById("output1").innerHTML = highlighted1;
-            document.getElementById("output2").innerHTML = highlighted2;
+                        // Myersアルゴリズムで差分を計算
+                        const diff = (function myersDiff(a, b) {
+                            const m = a.length, n = b.length;
+                            const max = m + n;
+                            const v = Array(2 * max + 1).fill(0);
+                            const trace = [];
+
+                            for (let d = 0; d <= max; d++) {
+                                trace.push([...v]);
+                                for (let k = -d; k <= d; k += 2) {
+                                    let x = (k === -d || (k !== d && v[k - 1 + max] < v[k + 1 + max]))
+                                        ? v[k + 1 + max]
+                                        : v[k - 1 + max] + 1;
+                                    let y = x - k;
+
+                                    while (x < m && y < n && a[x] === b[y]) {
+                                        x++;
+                                        y++;
+                                    }
+
+                                    v[k + max] = x;
+                                    if (x >= m && y >= n) {
+                                        return trace;
+                                    }
+                                }
+                            }
+                        })(text1, text2);
+
+                        // 結果をWorkerからメインスレッドに送信
+                        postMessage(diff);
+                    };
+                `], { type: 'text/javascript' })));
+            }
+
+            // テキストをWorkerに送信
+            worker.postMessage({ text1, text2 });
+
+            // Workerの結果を受け取る
+            worker.onmessage = function (e) {
+                const diff = e.data;
+
+                // 結果を画面に描画
+                document.getElementById("output1").innerHTML = diff.highlightedA;
+                document.getElementById("output2").innerHTML = diff.highlightedB;
+            };
         }
     </script>
-    <style type='text/css'>
+    <style>
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
         }
+
         textarea {
             width: 45%;
-            height: 200px;
+            height: 300px;
             margin-bottom: 10px;
         }
+
         .output {
             width: 45%;
+            height: 300px;
+            overflow: auto;
             padding: 10px;
             border: 1px solid #ddd;
             background: #f9f9f9;
             white-space: pre-wrap;
             word-wrap: break-word;
         }
-        .highlight-diff {
-            color: red;
+
+        .highlight-added {
+            background-color: #d4edda;
+            color: #155724;
             font-weight: bold;
         }
-        .description {
-            margin-top: 20px;
-            font-size: 14px;
-            color: #333;
+
+        .highlight-deleted {
+            background-color: #f8d7da;
+            color: #721c24;
+            font-weight: bold;
         }
     </style>
 </head>
 
 <body>
-    <h1>Enhanced Text Comparison Tool</h1>
+    <h1>High-Performance Text Comparison</h1>
     <div style="display: flex; justify-content: space-between;">
-        <textarea id="text1" placeholder="メモを入力してください"></textarea>
-        <textarea id="text2" placeholder="原稿を入力してください"></textarea>
+        <textarea id="text1" placeholder="テキスト1を入力してください"></textarea>
+        <textarea id="text2" placeholder="テキスト2を入力してください"></textarea>
     </div>
     <button onclick="compareTexts()">比較する</button>
     <div style="display: flex; justify-content: space-between; margin-top: 20px;">
         <div id="output1" class="output"></div>
         <div id="output2" class="output"></div>
-    </div>
-    <div class="description">
-        <p>※ 比較結果で<strong>赤色</strong>に強調表示されている部分は、テキスト間で異なる箇所を表しています。</p>
-        <p>改行や余分な空白は無視して比較されています。</p>
     </div>
 </body>
 
