@@ -6,21 +6,19 @@
     <meta name='author' content='ChatGPT'>
     <title>Text Comparison Tool</title>
     <script type='text/javascript'>
-        // 文字単位の差分検出ロジック
+        // 文字単位の差分検出ロジック (行は考慮せず全体で比較)
         function getCharDifferences(text1, text2) {
             const len1 = text1.length;
             const len2 = text2.length;
 
-            // 差分の結果を保持
             let result1 = '';
             let result2 = '';
 
-            // インデックスを管理
             let i = 0, j = 0;
 
             while (i < len1 || j < len2) {
                 if (i < len1 && j < len2 && text1[i] === text2[j]) {
-                    // 一致する場合
+                    // 完全一致の場合そのまま追加
                     result1 += text1[i];
                     result2 += text2[j];
                     i++;
