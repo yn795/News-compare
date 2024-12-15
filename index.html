@@ -4,9 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>High-Performance Text Comparison</title>
+    <title>Text Comparison Tool</title>
     <script>
-        // Myersアルゴリズムの差分計算
+        // Myersアルゴリズムで差分計算
         function myersDiff(a, b) {
             const m = a.length, n = b.length;
             const max = m + n;
@@ -37,10 +37,11 @@
             }
         }
 
-        // 差分ハイライト生成
+        // 差分ハイライト生成＆修正単語収集
         function generateHighlightedDiff(a, b, trace) {
             let x = a.length, y = b.length;
             let resultA = '', resultB = '';
+            const differences = [];
 
             for (let d = trace.length - 1; d >= 0; d--) {
                 const v = trace[d];
@@ -57,20 +58,24 @@
                 }
 
                 if (x > prevX) {
-                    resultA = `<span class="highlight-deleted">${a[--x]}</span>` + resultA;
+                    differences.push(a[--x]);
+                    resultA = `<span class="highlight">${a[x]}</span>` + resultA;
                 } else if (y > prevY) {
-                    resultB = `<span class="highlight-added">${b[--y]}</span>` + resultB;
+                    differences.push(b[--y]);
+                    resultB = `<span class="highlight">${b[y]}</span>` + resultB;
                 }
             }
 
             while (x > 0) {
-                resultA = `<span class="highlight-deleted">${a[--x]}</span>` + resultA;
+                differences.push(a[--x]);
+                resultA = `<span class="highlight">${a[x]}</span>` + resultA;
             }
             while (y > 0) {
-                resultB = `<span class="highlight-added">${b[--y]}</span>` + resultB;
+                differences.push(b[--y]);
+                resultB = `<span class="highlight">${b[y]}</span>` + resultB;
             }
 
-            return { highlightedA: resultA, highlightedB: resultB };
+            return { highlightedA: resultA, highlightedB: resultB, differences };
         }
 
         // テキスト比較
@@ -79,10 +84,16 @@
             const text2 = document.getElementById("text2").value.trim();
 
             const trace = myersDiff(text1, text2);
-            const { highlightedA, highlightedB } = generateHighlightedDiff(text1, text2, trace);
+            const { highlightedA, highlightedB, differences } = generateHighlightedDiff(text1, text2, trace);
 
             document.getElementById("output1").innerHTML = highlightedA;
             document.getElementById("output2").innerHTML = highlightedB;
+
+            // 修正単語一覧を生成
+            const differencesSummary = differences.map(diff => `<li>${diff}</li>`).join('');
+            document.getElementById("differences-summary").innerHTML = `
+                <h3>異なる部分の一覧</h3>
+                <ul>${differencesSummary}</ul>`;
         }
     </script>
     <style>
@@ -108,22 +119,32 @@
             word-wrap: break-word;
         }
 
-        .highlight-added {
-            background-color: #d4edda;
-            color: #155724;
-            font-weight: bold;
-        }
-
-        .highlight-deleted {
+        .highlight {
             background-color: #f8d7da;
             color: #721c24;
             font-weight: bold;
+        }
+
+        #differences-summary {
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            padding: 10px;
+            background: #f9f9f9;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        li {
+            padding: 5px 0;
         }
     </style>
 </head>
 
 <body>
-    <h1>High-Performance Text Comparison</h1>
+    <h1>Text Comparison Tool</h1>
     <div style="display: flex; justify-content: space-between;">
         <textarea id="text1" placeholder="テキスト1を入力してください"></textarea>
         <textarea id="text2" placeholder="テキスト2を入力してください"></textarea>
@@ -132,6 +153,10 @@
     <div style="display: flex; justify-content: space-between; margin-top: 20px;">
         <div id="output1" class="output"></div>
         <div id="output2" class="output"></div>
+    </div>
+    <div id="differences-summary">
+        <h3>異なる部分の一覧</h3>
+        <p>比較を実行すると、異なる部分がここに一覧表示されます。</p>
     </div>
 </body>
 
