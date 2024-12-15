@@ -6,64 +6,83 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>High-Performance Text Comparison</title>
     <script>
-        // 非同期処理用のWorker生成
-        let worker;
+        // Myersアルゴリズムの差分計算
+        function myersDiff(a, b) {
+            const m = a.length, n = b.length;
+            const max = m + n;
+            const v = Array(2 * max + 1).fill(0);
+            const trace = [];
 
-        function compareTexts() {
-            const text1 = document.getElementById("text1").value;
-            const text2 = document.getElementById("text2").value;
+            for (let d = 0; d <= max; d++) {
+                trace.push([...v]);
+                for (let k = -d; k <= d; k += 2) {
+                    let x = 0;
+                    if (k === -d || (k !== d && v[k - 1 + max] < v[k + 1 + max])) {
+                        x = v[k + 1 + max];
+                    } else {
+                        x = v[k - 1 + max] + 1;
+                    }
+                    let y = x - k;
 
-            // Workerが未生成なら作成
-            if (!worker) {
-                worker = new Worker(URL.createObjectURL(new Blob([`
-                    onmessage = function (e) {
-                        const { text1, text2 } = e.data;
+                    while (x < m && y < n && a[x] === b[y]) {
+                        x++;
+                        y++;
+                    }
 
-                        // Myersアルゴリズムで差分を計算
-                        const diff = (function myersDiff(a, b) {
-                            const m = a.length, n = b.length;
-                            const max = m + n;
-                            const v = Array(2 * max + 1).fill(0);
-                            const trace = [];
+                    v[k + max] = x;
+                    if (x >= m && y >= n) {
+                        return trace;
+                    }
+                }
+            }
+        }
 
-                            for (let d = 0; d <= max; d++) {
-                                trace.push([...v]);
-                                for (let k = -d; k <= d; k += 2) {
-                                    let x = (k === -d || (k !== d && v[k - 1 + max] < v[k + 1 + max]))
-                                        ? v[k + 1 + max]
-                                        : v[k - 1 + max] + 1;
-                                    let y = x - k;
+        // 差分ハイライト生成
+        function generateHighlightedDiff(a, b, trace) {
+            let x = a.length, y = b.length;
+            let resultA = '', resultB = '';
 
-                                    while (x < m && y < n && a[x] === b[y]) {
-                                        x++;
-                                        y++;
-                                    }
+            for (let d = trace.length - 1; d >= 0; d--) {
+                const v = trace[d];
+                const k = x - y;
+                const prevK = (k === -d || (k !== d && v[k - 1 + v.length / 2] < v[k + 1 + v.length / 2]))
+                    ? k + 1
+                    : k - 1;
+                const prevX = v[prevK + v.length / 2];
+                const prevY = prevX - prevK;
 
-                                    v[k + max] = x;
-                                    if (x >= m && y >= n) {
-                                        return trace;
-                                    }
-                                }
-                            }
-                        })(text1, text2);
+                while (x > prevX && y > prevY) {
+                    resultA = a[--x] + resultA;
+                    resultB = b[--y] + resultB;
+                }
 
-                        // 結果をWorkerからメインスレッドに送信
-                        postMessage(diff);
-                    };
-                `], { type: 'text/javascript' })));
+                if (x > prevX) {
+                    resultA = `<span class="highlight-deleted">${a[--x]}</span>` + resultA;
+                } else if (y > prevY) {
+                    resultB = `<span class="highlight-added">${b[--y]}</span>` + resultB;
+                }
             }
 
-            // テキストをWorkerに送信
-            worker.postMessage({ text1, text2 });
+            while (x > 0) {
+                resultA = `<span class="highlight-deleted">${a[--x]}</span>` + resultA;
+            }
+            while (y > 0) {
+                resultB = `<span class="highlight-added">${b[--y]}</span>` + resultB;
+            }
 
-            // Workerの結果を受け取る
-            worker.onmessage = function (e) {
-                const diff = e.data;
+            return { highlightedA: resultA, highlightedB: resultB };
+        }
 
-                // 結果を画面に描画
-                document.getElementById("output1").innerHTML = diff.highlightedA;
-                document.getElementById("output2").innerHTML = diff.highlightedB;
-            };
+        // テキスト比較
+        function compareTexts() {
+            const text1 = document.getElementById("text1").value.trim();
+            const text2 = document.getElementById("text2").value.trim();
+
+            const trace = myersDiff(text1, text2);
+            const { highlightedA, highlightedB } = generateHighlightedDiff(text1, text2, trace);
+
+            document.getElementById("output1").innerHTML = highlightedA;
+            document.getElementById("output2").innerHTML = highlightedB;
         }
     </script>
     <style>
