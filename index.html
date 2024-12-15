@@ -4,12 +4,20 @@
 <head>
     <meta http-equiv='Content-Type' content='text/html; charset=utf-8'>
     <meta name='author' content='ChatGPT'>
-    <title>Text Comparison Tool</title>
+    <title>Enhanced Text Comparison Tool</title>
     <script type='text/javascript'>
-        // 文字単位の差分検出ロジック (行は考慮せず全体で比較)
+        // 改行・空白を無視した差分比較ロジック
+        function getNormalizedText(text) {
+            // 改行と余分な空白を統一（1つのスペースに置換）
+            return text.replace(/\s+/g, ' ').trim();
+        }
+
         function getCharDifferences(text1, text2) {
-            const len1 = text1.length;
-            const len2 = text2.length;
+            const normalized1 = getNormalizedText(text1);
+            const normalized2 = getNormalizedText(text2);
+
+            const len1 = normalized1.length;
+            const len2 = normalized2.length;
 
             let result1 = '';
             let result2 = '';
@@ -17,21 +25,21 @@
             let i = 0, j = 0;
 
             while (i < len1 || j < len2) {
-                if (i < len1 && j < len2 && text1[i] === text2[j]) {
-                    // 完全一致の場合そのまま追加
-                    result1 += text1[i];
-                    result2 += text2[j];
+                if (i < len1 && j < len2 && normalized1[i] === normalized2[j]) {
+                    // 一致する文字
+                    result1 += normalized1[i];
+                    result2 += normalized2[j];
                     i++;
                     j++;
                 } else {
                     if (i < len1) {
-                        // text1にしか存在しない文字を強調
-                        result1 += `<span class="highlight-diff">${text1[i]}</span>`;
+                        // text1にしかない文字を強調
+                        result1 += `<span class="highlight-diff">${normalized1[i]}</span>`;
                         i++;
                     }
                     if (j < len2) {
-                        // text2にしか存在しない文字を強調
-                        result2 += `<span class="highlight-diff">${text2[j]}</span>`;
+                        // text2にしかない文字を強調
+                        result2 += `<span class="highlight-diff">${normalized2[j]}</span>`;
                         j++;
                     }
                 }
@@ -39,11 +47,11 @@
             return { highlighted1: result1, highlighted2: result2 };
         }
 
-        // テキスト比較の実行
         function compareTexts() {
             const text1 = document.getElementById("text1").value.trim();
             const text2 = document.getElementById("text2").value.trim();
 
+            // オリジナルを維持しながら比較用の正規化を実施
             const { highlighted1, highlighted2 } = getCharDifferences(text1, text2);
 
             document.getElementById("output1").innerHTML = highlighted1;
@@ -81,7 +89,7 @@
 </head>
 
 <body>
-    <h1>Text Comparison Tool</h1>
+    <h1>Enhanced Text Comparison Tool</h1>
     <div style="display: flex; justify-content: space-between;">
         <textarea id="text1" placeholder="メモを入力してください"></textarea>
         <textarea id="text2" placeholder="原稿を入力してください"></textarea>
@@ -93,7 +101,7 @@
     </div>
     <div class="description">
         <p>※ 比較結果で<strong>赤色</strong>に強調表示されている部分は、テキスト間で異なる箇所を表しています。</p>
-        <p>左側が「メモ」の比較結果、右側が「原稿」の比較結果です。</p>
+        <p>改行や余分な空白は無視して比較されています。</p>
     </div>
 </body>
 
