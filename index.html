@@ -6,7 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Text Comparison Tool</title>
     <script>
-        // Myersアルゴリズムで差分計算
+        // テキストの正規化（空白や改行のみ処理）
+        function normalizeText(text) {
+            return text
+                .trim() // 前後の余分な空白を削除
+                .replace(/\s+/g, ' '); // 連続する空白や改行を1つのスペースに統一
+        }
+
+        // 差分計算（Myersアルゴリズム）
         function myersDiff(a, b) {
             const m = a.length, n = b.length;
             const max = m + n;
@@ -37,7 +44,7 @@
             }
         }
 
-        // 差分ハイライト生成＆修正単語収集
+        // 差分ハイライト生成
         function generateHighlightedDiff(a, b, trace) {
             let x = a.length, y = b.length;
             let resultA = '', resultB = '';
@@ -58,20 +65,20 @@
                 }
 
                 if (x > prevX) {
-                    differences.push(a[--x]);
+                    differences.push({ text1: a[--x], text2: '-' });
                     resultA = `<span class="highlight">${a[x]}</span>` + resultA;
                 } else if (y > prevY) {
-                    differences.push(b[--y]);
+                    differences.push({ text1: '-', text2: b[--y] });
                     resultB = `<span class="highlight">${b[y]}</span>` + resultB;
                 }
             }
 
             while (x > 0) {
-                differences.push(a[--x]);
+                differences.push({ text1: a[--x], text2: '-' });
                 resultA = `<span class="highlight">${a[x]}</span>` + resultA;
             }
             while (y > 0) {
-                differences.push(b[--y]);
+                differences.push({ text1: '-', text2: b[--y] });
                 resultB = `<span class="highlight">${b[y]}</span>` + resultB;
             }
 
@@ -80,8 +87,8 @@
 
         // テキスト比較
         function compareTexts() {
-            const text1 = document.getElementById("text1").value.trim();
-            const text2 = document.getElementById("text2").value.trim();
+            const text1 = normalizeText(document.getElementById("text1").value);
+            const text2 = normalizeText(document.getElementById("text2").value);
 
             const trace = myersDiff(text1, text2);
             const { highlightedA, highlightedB, differences } = generateHighlightedDiff(text1, text2, trace);
@@ -89,11 +96,23 @@
             document.getElementById("output1").innerHTML = highlightedA;
             document.getElementById("output2").innerHTML = highlightedB;
 
-            // 修正単語一覧を生成
-            const differencesSummary = differences.map(diff => `<li>${diff}</li>`).join('');
+            // 修正単語一覧を表形式で生成
+            const differencesTable = differences.map(diff => `
+                <tr>
+                    <td>${diff.text1}</td>
+                    <td>${diff.text2}</td>
+                </tr>`).join('');
             document.getElementById("differences-summary").innerHTML = `
                 <h3>異なる部分の一覧</h3>
-                <ul>${differencesSummary}</ul>`;
+                <table>
+                    <thead>
+                        <tr>
+                            <th>テキスト1</th>
+                            <th>テキスト2</th>
+                        </tr>
+                    </thead>
+                    <tbody>${differencesTable}</tbody>
+                </table>`;
         }
     </script>
     <style>
@@ -132,13 +151,19 @@
             background: #f9f9f9;
         }
 
-        ul {
-            list-style-type: none;
-            padding: 0;
+        table {
+            width: 100%;
+            border-collapse: collapse;
         }
 
-        li {
-            padding: 5px 0;
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
         }
     </style>
 </head>
@@ -156,7 +181,7 @@
     </div>
     <div id="differences-summary">
         <h3>異なる部分の一覧</h3>
-        <p>比較を実行すると、異なる部分がここに一覧表示されます。</p>
+        <p>比較を実行すると、異なる部分が表形式で表示されます。</p>
     </div>
 </body>
 
