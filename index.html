@@ -1,98 +1,174 @@
-<!DOCTYPE HTML PUBLIC '-//W3C//DTD HTML 4.01 Transitional//EN'>
-<html lang=ja>
+<!DOCTYPE HTML>
+<html lang="ja">
 
 <head>
-<meta http-equiv='Content-Type' content='text/html; charset=utf-8'>
-<meta http-equiv='Content-Script-Type' content='text/javascript'>
-<meta http-equiv='Content-Style-Type' content='text/css'>
-<meta name='author' content='Yuki Naito'>
-<title>Enhanced difff《ﾃﾞｭﾌﾌ》</title>
-<script type='text/javascript'>
-//-->
-    // 差分ハイライトロジック
-    function highlightDifferences(text1, text2) {
-        const words1 = text1.split(/\s+/);
-        const words2 = text2.split(/\s+/);
-
-        let highlighted1 = "";
-        let highlighted2 = "";
-
-        const maxLength = Math.max(words1.length, words2.length);
-
-        for (let i = 0; i < maxLength; i++) {
-            const word1 = words1[i] || "";
-            const word2 = words2[i] || "";
-
-            if (word1 === word2) {
-                highlighted1 += `${word1} `;
-                highlighted2 += `${word2} `;
-            } else if (word1 && word2) {
-                highlighted1 += `<span class="highlight-diff">${word1}</span> `;
-                highlighted2 += `<span class="highlight-diff">${word2}</span> `;
-            } else {
-                highlighted1 += `<span class="highlight-partial">${word1}</span> `;
-                highlighted2 += `<span class="highlight-partial">${word2}</span> `;
-            }
+    <meta charset="UTF-8">
+    <title>Enhanced Text Comparator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
         }
 
-        return { highlighted1: highlighted1.trim(), highlighted2: highlighted2.trim() };
-    }
-
-    // 行単位で差分を比較
-    function compareTexts() {
-        const text1 = document.getElementById("text1").value.trim();
-        const text2 = document.getElementById("text2").value.trim();
-
-        const lines1 = text1.split("\n");
-        const lines2 = text2.split("\n");
-
-        const maxLines = Math.max(lines1.length, lines2.length);
-
-        let result1 = "";
-        let result2 = "";
-
-        for (let i = 0; i < maxLines; i++) {
-            const line1 = lines1[i] || "";
-            const line2 = lines2[i] || "";
-
-            if (line1 === "" && line2 === "") {
-                continue;
-            }
-
-            const { highlighted1, highlighted2 } = highlightDifferences(line1, line2);
-
-            result1 += `${highlighted1}<br>`;
-            result2 += `${highlighted2}<br>`;
+        textarea {
+            width: 45%;
+            height: 200px;
+            margin-bottom: 10px;
         }
 
-        document.getElementById("output1").innerHTML = result1.trim();
-        document.getElementById("output2").innerHTML = result2.trim();
-    }
-//-->
-</script>
-<style type='text/css'>
-<!--
-    * { font-family: verdana, arial, helvetica, sans-serif }
-    p, table, textarea, ul { font-size: 10pt }
-    textarea { width: 45%; height: 200px; margin-bottom: 10px; }
-    a  { color: #3366CC }
-    .highlight-diff { color: red; font-weight: bold; }
-    .highlight-partial { color: blue; font-weight: bold; }
-    .output { width: 45%; border: 1px solid #ddd; padding: 10px; background: #f9f9f9; }
--->
-</style>
+        .highlight-added {
+            background-color: #d4f4dd;
+            font-weight: bold;
+        }
+
+        .highlight-removed {
+            background-color: #f4d4d4;
+            text-decoration: line-through;
+        }
+
+        .highlight-diff {
+            color: red;
+            font-weight: bold;
+        }
+
+        .output {
+            width: 45%;
+            border: 1px solid #ddd;
+            padding: 10px;
+            background: #f9f9f9;
+            margin-bottom: 10px;
+        }
+
+        .stats {
+            margin: 10px 0;
+        }
+
+        button {
+            margin: 10px 0;
+        }
+    </style>
 </head>
 
 <body>
-    <h1>Enhanced difff《ﾃﾞｭﾌﾌ》</h1>
+    <h1>Enhanced Text Comparator</h1>
+
     <div style="display: flex; justify-content: space-between;">
         <textarea id="text1" placeholder="テキスト1を入力してください"></textarea>
         <textarea id="text2" placeholder="テキスト2を入力してください"></textarea>
     </div>
+
+    <label>
+        <input type="checkbox" id="ignoreWhitespace"> 空白を無視する
+    </label>
     <button onclick="compareTexts()">比較する</button>
+
     <div style="display: flex; justify-content: space-between;">
         <div id="output1" class="output"></div>
         <div id="output2" class="output"></div>
     </div>
+
+    <div class="stats" id="stats"></div>
+
+    <script>
+        function normalizeText(text) {
+            const ignoreWhitespace = document.getElementById("ignoreWhitespace").checked;
+            return ignoreWhitespace ? text.replace(/\s+/g, ' ').trim() : text;
+        }
+
+        function highlightCharDifferences(word1, word2) {
+            let result1 = '';
+            let result2 = '';
+            const maxLen = Math.max(word1.length, word2.length);
+
+            for (let i = 0; i < maxLen; i++) {
+                const char1 = word1[i] || '';
+                const char2 = word2[i] || '';
+
+                if (char1 === char2) {
+                    result1 += char1;
+                    result2 += char2;
+                } else {
+                    result1 += `<span class="highlight-removed">${char1}</span>`;
+                    result2 += `<span class="highlight-added">${char2}</span>`;
+                }
+            }
+            return { result1, result2 };
+        }
+
+        function highlightDifferences(text1, text2) {
+            const words1 = text1.split(/\s+/);
+            const words2 = text2.split(/\s+/);
+
+            let highlighted1 = '';
+            let highlighted2 = '';
+
+            const maxLength = Math.max(words1.length, words2.length);
+
+            for (let i = 0; i < maxLength; i++) {
+                const word1 = words1[i] || '';
+                const word2 = words2[i] || '';
+
+                if (word1 === word2) {
+                    highlighted1 += `${word1} `;
+                    highlighted2 += `${word2} `;
+                } else {
+                    const { result1, result2 } = highlightCharDifferences(word1, word2);
+                    highlighted1 += `${result1} `;
+                    highlighted2 += `${result2} `;
+                }
+            }
+
+            return { highlighted1: highlighted1.trim(), highlighted2: highlighted2.trim() };
+        }
+
+        function compareTexts() {
+            const text1 = normalizeText(document.getElementById("text1").value.trim());
+            const text2 = normalizeText(document.getElementById("text2").value.trim());
+
+            const lines1 = text1.split("\n");
+            const lines2 = text2.split("\n");
+
+            const maxLines = Math.max(lines1.length, lines2.length);
+
+            let result1 = '';
+            let result2 = '';
+            let addedCount = 0, removedCount = 0, modifiedCount = 0;
+
+            for (let i = 0; i < maxLines; i++) {
+                const line1 = lines1[i] || '';
+                const line2 = lines2[i] || '';
+
+                if (line1 === "" && line2 === "") continue;
+
+                if (line1 === line2) {
+                    result1 += `${line1}<br>`;
+                    result2 += `${line2}<br>`;
+                } else {
+                    const { highlighted1, highlighted2 } = highlightDifferences(line1, line2);
+                    result1 += `${highlighted1}<br>`;
+                    result2 += `${highlighted2}<br>`;
+
+                    if (!line1) {
+                        addedCount++;
+                    } else if (!line2) {
+                        removedCount++;
+                    } else {
+                        modifiedCount++;
+                    }
+                }
+            }
+
+            document.getElementById("output1").innerHTML = result1.trim();
+            document.getElementById("output2").innerHTML = result2.trim();
+
+            // 統計情報の表示
+            document.getElementById("stats").innerHTML = `
+                <p>追加された行: ${addedCount}</p>
+                <p>削除された行: ${removedCount}</p>
+                <p>修正された行: ${modifiedCount}</p>
+            `;
+        }
+    </script>
 </body>
+
 </html>
