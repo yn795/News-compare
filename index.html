@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>テキスト比較ツール</title>
+  <title>テキスト比較ツール - 改良版</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -20,91 +20,115 @@
       background: #f9f9f9;
       margin-bottom: 10px;
       overflow: auto;
+      min-height: 100px;
     }
     .highlight-diff {
       color: blue;
+      font-weight: bold;
+    }
+    .line {
+      white-space: pre-wrap;
+    }
+    .container {
+      display: flex;
+      justify-content: space-between;
     }
   </style>
 </head>
 <body>
-  <h1>テキスト比較ツール</h1>
-  <div style="display: flex; justify-content: space-between;">
+  <h1>テキスト比較ツール - 改良版</h1>
+  <div class="container">
     <textarea id="text1" placeholder="テキスト１を入力してください"></textarea>
     <textarea id="text2" placeholder="テキスト２を入力してください"></textarea>
   </div>
   <button onclick="compareTexts()">比較する</button>
-  <div style="display: flex; justify-content: space-between;">
+  <div class="container">
     <div id="output1" class="output"></div>
     <div id="output2" class="output"></div>
   </div>
   <script>
-    // 文字単位で差分を比較し、異なる文字を青色でハイライトする関数
-    function highlightCharDifferences(word1, word2) {
-      let result1 = '';
-      let result2 = '';
-      const maxLen = Math.max(word1.length, word2.length);
-      for (let i = 0; i < maxLen; i++) {
-        const char1 = word1[i] || '';
-        const char2 = word2[i] || '';
-        if (char1 === char2) {
-          result1 += char1;
-          result2 += char2;
-        } else {
-          if (char1 !== '') {
-            result1 += '<span class="highlight-diff">' + char1 + '</span>';
-          }
-          if (char2 !== '') {
-            result2 += '<span class="highlight-diff">' + char2 + '</span>';
+    // 単語単位の最長共通部分列（LCS）アルゴリズムによる diff を実装
+    function diffWords(words1, words2) {
+      const m = words1.length, n = words2.length;
+      const dp = Array(m + 1).fill(null).map(() => Array(n + 1).fill(0));
+      for (let i = 0; i < m; i++) {
+        for (let j = 0; j < n; j++) {
+          if (words1[i] === words2[j]) {
+            dp[i + 1][j + 1] = dp[i][j] + 1;
+          } else {
+            dp[i + 1][j + 1] = Math.max(dp[i + 1][j], dp[i][j + 1]);
           }
         }
       }
-      return { result1, result2 };
+      let i = m, j = n;
+      const result = [];
+      while (i > 0 && j > 0) {
+        if (words1[i - 1] === words2[j - 1]) {
+          result.unshift({ type: 'equal', text: words1[i - 1] });
+          i--;
+          j--;
+        } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+          result.unshift({ type: 'removed', text: words1[i - 1] });
+          i--;
+        } else {
+          result.unshift({ type: 'added', text: words2[j - 1] });
+          j--;
+        }
+      }
+      while (i > 0) {
+        result.unshift({ type: 'removed', text: words1[i - 1] });
+        i--;
+      }
+      while (j > 0) {
+        result.unshift({ type: 'added', text: words2[j - 1] });
+        j--;
+      }
+      return result;
+    }
+
+    // 行単位の差分を、単語レベルの LCS に基づいてハイライトする関数
+    function highlightDifferences(line1, line2) {
+      // 単語単位に分割（空白で分割し、空文字を除外）
+      const words1 = line1.split(/\s+/).filter(word => word !== "");
+      const words2 = line2.split(/\s+/).filter(word => word !== "");
+      const diff = diffWords(words1, words2);
+      let leftLine = "";
+      let rightLine = "";
+      diff.forEach(token => {
+        if (token.type === 'equal') {
+          leftLine += token.text + " ";
+          rightLine += token.text + " ";
+        } else if (token.type === 'removed') {
+          leftLine += "<span class='highlight-diff'>" + token.text + "</span> ";
+        } else if (token.type === 'added') {
+          rightLine += "<span class='highlight-diff'>" + token.text + "</span> ";
+        }
+      });
+      return { leftLine: leftLine.trim(), rightLine: rightLine.trim() };
     }
 
     function compareTexts() {
-      const text1 = document.getElementById('text1').value;
-      const text2 = document.getElementById('text2').value;
-      const lines1 = text1.split('\n');
-      const lines2 = text2.split('\n');
-      let output1 = '';
-      let output2 = '';
+      const text1 = document.getElementById("text1").value;
+      const text2 = document.getElementById("text2").value;
+      const lines1 = text1.split("\n");
+      const lines2 = text2.split("\n");
       const maxLines = Math.max(lines1.length, lines2.length);
-      
+      let output1 = "";
+      let output2 = "";
       for (let i = 0; i < maxLines; i++) {
-        const line1 = lines1[i] || '';
-        const line2 = lines2[i] || '';
-        
+        const line1 = lines1[i] || "";
+        const line2 = lines2[i] || "";
         if (line1 === line2) {
-          output1 += line1 + '<br>';
-          output2 += line2 + '<br>';
+          output1 += "<div class='line'>" + line1 + "</div>";
+          output2 += "<div class='line'>" + line2 + "</div>";
         } else {
-          // 行が異なる場合、単語ごとに分割して比較
-          const words1 = line1.split(' ');
-          const words2 = line2.split(' ');
-          let lineOutput1 = '';
-          let lineOutput2 = '';
-          const maxWords = Math.max(words1.length, words2.length);
-          
-          for (let j = 0; j < maxWords; j++) {
-            const word1 = words1[j] || '';
-            const word2 = words2[j] || '';
-            
-            if (word1 === word2) {
-              lineOutput1 += word1 + ' ';
-              lineOutput2 += word2 + ' ';
-            } else {
-              // 単語が異なる場合は文字単位の比較で差分をハイライト
-              const { result1, result2 } = highlightCharDifferences(word1, word2);
-              lineOutput1 += result1 + ' ';
-              lineOutput2 += result2 + ' ';
-            }
-          }
-          output1 += lineOutput1.trim() + '<br>';
-          output2 += lineOutput2.trim() + '<br>';
+          const { leftLine, rightLine } = highlightDifferences(line1, line2);
+          output1 += "<div class='line'>" + leftLine + "</div>";
+          output2 += "<div class='line'>" + rightLine + "</div>";
         }
       }
-      document.getElementById('output1').innerHTML = output1;
-      document.getElementById('output2').innerHTML = output2;
+      document.getElementById("output1").innerHTML = output1;
+      document.getElementById("output2").innerHTML = output2;
     }
   </script>
 </body>
