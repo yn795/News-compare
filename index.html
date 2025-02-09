@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 　<meta charset="UTF-8">
-　<title>Advanced Text Comparator</title>
+　<title>テキスト比較ツール</title>
 　<style>
 　　body {
 　　　font-family: Arial, sans-serif;
@@ -13,6 +13,14 @@
 　　　height: 200px;
 　　　margin-bottom: 10px;
 　　}
+　　.output {
+　　　width: 45%;
+　　　border: 1px solid #ddd;
+　　　padding: 10px;
+　　　background: #f9f9f9;
+　　　margin-bottom: 10px;
+　　　overflow: auto;
+　　}
 　　.highlight-added {
 　　　background-color: #d4f4dd;
 　　　font-weight: bold;
@@ -21,255 +29,69 @@
 　　　background-color: #f4d4f4;
 　　　text-decoration: line-through;
 　　}
-　　.output {
-　　　width: 45%;
-　　　border: 1px solid #ddd;
-　　　padding: 10px;
-　　　background: #f9f9f9;
-　　　margin-bottom: 10px;
-　　　overflow: auto;
-　　　height: 300px;
-　　}
-　　.stats {
-　　　margin: 10px 0;
-　　}
-　　button {
-　　　margin: 10px 5px;
-　　}
-　　.options {
-　　　margin-bottom: 10px;
-　　}
 　</style>
 </head>
 <body>
-　<h1>Advanced Text Comparator</h1>
-　<div class="options">
-　　<label><input type="checkbox" id="ignoreWhitespace"> 空白を無視する</label>
-　　<label><input type="checkbox" id="ignoreCase"> 大文字小文字を無視する</label>
-　　<label><input type="checkbox" id="ignorePunctuation"> 記号を無視する</label>
-　　<label><input type="checkbox" id="realTime"> リアルタイム更新</label>
-　</div>
+　<h1>テキスト比較ツール</h1>
 　<div style="display: flex; justify-content: space-between;">
 　　<textarea id="text1" placeholder="テキスト１を入力してください"></textarea>
 　　<textarea id="text2" placeholder="テキスト２を入力してください"></textarea>
 　</div>
-　<div class="buttons">
-　　<button onclick="compareTexts()">比較する</button>
-　　<button onclick="resetTexts()">リセット</button>
-　　<button onclick="downloadDiff()">結果をダウンロード</button>
-　</div>
+　<button onclick="compareTexts()">比較する</button>
 　<div style="display: flex; justify-content: space-between;">
 　　<div id="output1" class="output"></div>
 　　<div id="output2" class="output"></div>
 　</div>
-　<div class="stats" id="stats"></div>
-　
 　<script>
-　　// デバウンス処理により、連続入力時の負荷を軽減
-　　function debounce(func, wait) {
-　　　let timeout;
-　　　return function() {
-　　　　clearTimeout(timeout);
-　　　　timeout = setTimeout(() => func.apply(this, arguments), wait);
-　　　};
-　　}
-
-　　// 入力テキストを各オプションに従い正規化する
-　　function normalizeText(text) {
-　　　// 空白を無視する場合：各行内の余分な空白を1つにまとめる
-　　　if(document.getElementById("ignoreWhitespace").checked){
-　　　　text = text.split("\n").map(line => line.replace(/[ 　]+/g, ' ').trim()).join("\n");
-　　　}
-　　　// 大文字小文字を無視する場合
-　　　if(document.getElementById("ignoreCase").checked){
-　　　　text = text.toLowerCase();
-　　　}
-　　　// 記号を無視する場合：アルファベット・数字以外の一般的な記号を除去
-　　　if(document.getElementById("ignorePunctuation").checked){
-　　　　text = text.replace(/[!-/:-@[-`{-~、。・「」（）『』【】《》〈〉]/g, '');
-　　　}
-　　　return text;
-　　}
-
-　　// 文字レベルの差分をハイライトする
-　　function highlightCharDifferences(str1, str2) {
-　　　let result1 = '', result2 = '';
-　　　const maxLen = Math.max(str1.length, str2.length);
-　　　for (let i = 0; i < maxLen; i++){
-　　　　const char1 = str1[i] || '';
-　　　　const char2 = str2[i] || '';
-　　　　if(char1 === char2){
-　　　　　result1 += char1;
-　　　　　result2 += char2;
-　　　　} else {
-　　　　　result1 += `<span class="highlight-removed">${char1}</span>`;
-　　　　　result2 += `<span class="highlight-added">${char2}</span>`;
-　　　　}
-　　　}
-　　　return { result1, result2 };
-　　}
-
-　　// 単語レベルの差分（Myersアルゴリズムに基づく実装）
-　　function diffWords(words1, words2) {
-　　　const m = words1.length, n = words2.length;
-　　　const dp = Array(m + 1).fill(null).map(() => Array(n + 1).fill(0));
-　　　for(let i = 0; i < m; i++){
-　　　　for(let j = 0; j < n; j++){
-　　　　　if(words1[i] === words2[j]){
-　　　　　　dp[i+1][j+1] = dp[i][j] + 1;
-　　　　　} else {
-　　　　　　dp[i+1][j+1] = Math.max(dp[i+1][j], dp[i][j+1]);
-　　　　　}
-　　　　}
-　　　}
-　　　let i = m, j = n;
-　　　const result = [];
-　　　while(i > 0 && j > 0){
-　　　　if(words1[i-1] === words2[j-1]){
-　　　　　　result.unshift({ type: 'equal', text: words1[i-1] });
-　　　　　　i--;
-　　　　　　j--;
-　　　　} else if(dp[i-1][j] >= dp[i][j-1]){
-　　　　　　result.unshift({ type: 'removed', text: words1[i-1] });
-　　　　　　i--;
-　　　　} else {
-　　　　　　result.unshift({ type: 'added', text: words2[j-1] });
-　　　　　　j--;
-　　　　}
-　　　}
-　　　while(i > 0){
-　　　　result.unshift({ type: 'removed', text: words1[i-1] });
-　　　　i--;
-　　　}
-　　　while(j > 0){
-　　　　result.unshift({ type: 'added', text: words2[j-1] });
-　　　　j--;
-　　　}
-　　　return result;
-　　}
-
-　　// 単語レベルおよび必要に応じて文字レベルの差分をハイライトする
-　　function highlightDifferences(line1, line2) {
-　　　const words1 = line1.split(/\s+/);
-　　　const words2 = line2.split(/\s+/);
-　　　const diffResult = diffWords(words1, words2);
-　　　let highlighted1 = '', highlighted2 = '';
-　　　for(let i = 0; i < diffResult.length; i++){
-　　　　const diff = diffResult[i];
-　　　　if(diff.type === 'equal'){
-　　　　　　highlighted1 += diff.text + ' ';
-　　　　　　highlighted2 += diff.text + ' ';
-　　　　} else if(diff.type === 'removed'){
-　　　　　　// 隣接する追加との差分は文字レベルで比較
-　　　　　　if(i < diffResult.length - 1 && diffResult[i+1].type === 'added'){
-　　　　　　　const addedDiff = diffResult[i+1];
-　　　　　　　const { result1, result2 } = highlightCharDifferences(diff.text, addedDiff.text);
-　　　　　　　highlighted1 += result1 + ' ';
-　　　　　　　highlighted2 += result2 + ' ';
-　　　　　　　i++;
-　　　　　　} else {
-　　　　　　　highlighted1 += `<span class="highlight-removed">${diff.text}</span> `;
-　　　　　　}
-　　　　} else if(diff.type === 'added'){
-　　　　　　highlighted2 += `<span class="highlight-added">${diff.text}</span> `;
-　　　　}
-　　　}
-　　　return { highlighted1: highlighted1.trim(), highlighted2: highlighted2.trim() };
-　　}
-
-　　// 行単位でテキストを比較し、差分表示を行う
 　　function compareTexts() {
-　　　const rawText1 = document.getElementById("text1").value;
-　　　const rawText2 = document.getElementById("text2").value;
-　　　const text1 = normalizeText(rawText1);
-　　　const text2 = normalizeText(rawText2);
-　　　const lines1 = text1.split("\n");
-　　　const lines2 = text2.split("\n");
-　　　const maxLines = Math.max(lines1.length, lines2.length);
-　　　let result1 = '', result2 = '';
-　　　let addedCount = 0, removedCount = 0, modifiedCount = 0;
-　　　for(let i = 0; i < maxLines; i++){
-　　　　const line1 = lines1[i] || '';
-　　　　const line2 = lines2[i] || '';
-　　　　if(line1 === '' && line2 === '') continue;
-　　　　if(line1 === line2){
-　　　　　　result1 += line1 + '<br>';
-　　　　　　result2 += line2 + '<br>';
-　　　　} else {
-　　　　　　const { highlighted1, highlighted2 } = highlightDifferences(line1, line2);
-　　　　　　result1 += highlighted1 + '<br>';
-　　　　　　result2 += highlighted2 + '<br>';
-　　　　　　if(!line1) {
-　　　　　　　　addedCount++;
-　　　　　　} else if(!line2) {
-　　　　　　　　removedCount++;
+　　　　// 入力されたテキストを行ごとに分割
+　　　　const text1 = document.getElementById('text1').value;
+　　　　const text2 = document.getElementById('text2').value;
+　　　　const lines1 = text1.split('\n');
+　　　　const lines2 = text2.split('\n');
+　　　　let output1 = '';
+　　　　let output2 = '';
+　　　　const maxLines = Math.max(lines1.length, lines2.length);
+　　　　
+　　　　for (let i = 0; i < maxLines; i++) {
+　　　　　　const line1 = lines1[i] || '';
+　　　　　　const line2 = lines2[i] || '';
+　　　　　　
+　　　　　　if (line1 === line2) {
+　　　　　　　　// 同一の行はそのまま表示
+　　　　　　　　output1 += line1 + '<br>';
+　　　　　　　　output2 += line2 + '<br>';
 　　　　　　} else {
-　　　　　　　　modifiedCount++;
+　　　　　　　　// 行が異なる場合、単語ごとに分割して比較
+　　　　　　　　const words1 = line1.split(' ');
+　　　　　　　　const words2 = line2.split(' ');
+　　　　　　　　let lineOutput1 = '';
+　　　　　　　　let lineOutput2 = '';
+　　　　　　　　const maxWords = Math.max(words1.length, words2.length);
+　　　　　　　　
+　　　　　　　　for (let j = 0; j < maxWords; j++) {
+　　　　　　　　　　const word1 = words1[j] || '';
+　　　　　　　　　　const word2 = words2[j] || '';
+　　　　　　　　　　
+　　　　　　　　　　if (word1 === word2) {
+　　　　　　　　　　　　lineOutput1 += word1 + ' ';
+　　　　　　　　　　　　lineOutput2 += word2 + ' ';
+　　　　　　　　　　} else {
+　　　　　　　　　　　　if (word1 !== '') {
+　　　　　　　　　　　　　　lineOutput1 += '<span class="highlight-removed">' + word1 + '</span> ';
+　　　　　　　　　　　　}
+　　　　　　　　　　　　if (word2 !== '') {
+　　　　　　　　　　　　　　lineOutput2 += '<span class="highlight-added">' + word2 + '</span> ';
+　　　　　　　　　　　　}
+　　　　　　　　　　}
+　　　　　　　　}
+　　　　　　　　output1 += lineOutput1.trim() + '<br>';
+　　　　　　　　output2 += lineOutput2.trim() + '<br>';
 　　　　　　}
 　　　　}
-　　　}
-　　　document.getElementById("output1").innerHTML = result1;
-　　　document.getElementById("output2").innerHTML = result2;
-　　　document.getElementById("stats").innerHTML = 
-　　　　`<p>追加された行: ${addedCount}</p>` +
-　　　　`<p>削除された行: ${removedCount}</p>` +
-　　　　`<p>修正された行: ${modifiedCount}</p>`;
+　　　　document.getElementById('output1').innerHTML = output1;
+　　　　document.getElementById('output2').innerHTML = output2;
 　　}
-
-　　// リセット処理
-　　function resetTexts() {
-　　　document.getElementById("text1").value = '';
-　　　document.getElementById("text2").value = '';
-　　　document.getElementById("output1").innerHTML = '';
-　　　document.getElementById("output2").innerHTML = '';
-　　　document.getElementById("stats").innerHTML = '';
-　　}
-
-　　// 結果をHTMLファイルとしてダウンロード
-　　function downloadDiff() {
-　　　const diffHtml = `
-　　　　<html>
-　　　　<head>
-　　　　　　<meta charset="UTF-8">
-　　　　　　<title>Diff 結果</title>
-　　　　　　<style>
-　　　　　　　　.highlight-added { background-color: #d4f4dd; font-weight: bold; }
-　　　　　　　　.highlight-removed { background-color: #f4f4f4; text-decoration: line-through; }
-　　　　　　　　body { font-family: Arial, sans-serif; margin: 20px; }
-　　　　　　</style>
-　　　　</head>
-　　　　<body>
-　　　　　　<h1>Diff 結果</h1>
-　　　　　　<div><h2>テキスト１</h2>${document.getElementById("output1").innerHTML}</div>
-　　　　　　<div><h2>テキスト２</h2>${document.getElementById("output2").innerHTML}</div>
-　　　　　　<div>${document.getElementById("stats").innerHTML}</div>
-　　　　</body>
-　　　　</html>
-　　　`;
-　　　const blob = new Blob([diffHtml], { type: 'text/html' });
-　　　const url = URL.createObjectURL(blob);
-　　　const a = document.createElement('a');
-　　　a.href = url;
-　　　a.download = 'diff_result.html';
-　　　a.click();
-　　　URL.revokeObjectURL(url);
-　　}
-
-　　// リアルタイム更新が有効な場合、入力時に差分更新を実施
-　　const realTimeCheckbox = document.getElementById("realTime");
-　　function handleRealTime() {
-　　　if(realTimeCheckbox.checked){
-　　　　compareTexts();
-　　　}
-　　}
-　　document.getElementById("text1").addEventListener('input', debounce(handleRealTime, 300));
-　　document.getElementById("text2").addEventListener('input', debounce(handleRealTime, 300));
-
-　　// 出力エリアのスクロールを同期
-　　const output1 = document.getElementById("output1");
-　　const output2 = document.getElementById("output2");
-　　output1.addEventListener('scroll', () => { output2.scrollTop = output1.scrollTop; });
-　　output2.addEventListener('scroll', () => { output1.scrollTop = output2.scrollTop; });
 　</script>
 </body>
 </html>
