@@ -47,6 +47,14 @@
     <div id="output2" class="output"></div>
   </div>
   <script>
+    // 入力テキストを正規化して空行を除去する関数
+    function getNormalizedLines(text) {
+      return text
+        .split("\n")
+        .map(line => line.trim())
+        .filter(line => line !== "");
+    }
+
     // 単語単位の最長共通部分列（LCS）アルゴリズムによる diff を実装
     function diffWords(words1, words2) {
       const m = words1.length, n = words2.length;
@@ -88,7 +96,7 @@
 
     // 行単位の差分を、単語レベルの LCS に基づいてハイライトする関数
     function highlightDifferences(line1, line2) {
-      // 単語単位に分割（空白で分割し、空文字を除外）
+      // 空白で分割して空文字列を除外
       const words1 = line1.split(/\s+/).filter(word => word !== "");
       const words2 = line2.split(/\s+/).filter(word => word !== "");
       const diff = diffWords(words1, words2);
@@ -110,8 +118,9 @@
     function compareTexts() {
       const text1 = document.getElementById("text1").value;
       const text2 = document.getElementById("text2").value;
-      const lines1 = text1.split("\n");
-      const lines2 = text2.split("\n");
+      // 改行や余分な空行を除去して正規化した行配列を取得
+      const lines1 = getNormalizedLines(text1);
+      const lines2 = getNormalizedLines(text2);
       const maxLines = Math.max(lines1.length, lines2.length);
       let output1 = "";
       let output2 = "";
