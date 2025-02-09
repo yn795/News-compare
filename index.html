@@ -1,97 +1,111 @@
 <!DOCTYPE HTML>
 <html lang="ja">
 <head>
-　<meta charset="UTF-8">
-　<title>テキスト比較ツール</title>
-　<style>
-　　body {
-　　　font-family: Arial, sans-serif;
-　　　margin: 20px;
-　　}
-　　textarea {
-　　　width: 45%;
-　　　height: 200px;
-　　　margin-bottom: 10px;
-　　}
-　　.output {
-　　　width: 45%;
-　　　border: 1px solid #ddd;
-　　　padding: 10px;
-　　　background: #f9f9f9;
-　　　margin-bottom: 10px;
-　　　overflow: auto;
-　　}
-　　.highlight-added {
-　　　background-color: #d4f4dd;
-　　　font-weight: bold;
-　　}
-　　.highlight-removed {
-　　　background-color: #f4d4f4;
-　　　text-decoration: line-through;
-　　}
-　</style>
+  <meta charset="UTF-8">
+  <title>テキスト比較ツール</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    textarea {
+      width: 45%;
+      height: 200px;
+      margin-bottom: 10px;
+    }
+    .output {
+      width: 45%;
+      border: 1px solid #ddd;
+      padding: 10px;
+      background: #f9f9f9;
+      margin-bottom: 10px;
+      overflow: auto;
+    }
+    .highlight-diff {
+      color: blue;
+    }
+  </style>
 </head>
 <body>
-　<h1>テキスト比較ツール</h1>
-　<div style="display: flex; justify-content: space-between;">
-　　<textarea id="text1" placeholder="テキスト１を入力してください"></textarea>
-　　<textarea id="text2" placeholder="テキスト２を入力してください"></textarea>
-　</div>
-　<button onclick="compareTexts()">比較する</button>
-　<div style="display: flex; justify-content: space-between;">
-　　<div id="output1" class="output"></div>
-　　<div id="output2" class="output"></div>
-　</div>
-　<script>
-　　function compareTexts() {
-　　　　// 入力されたテキストを行ごとに分割
-　　　　const text1 = document.getElementById('text1').value;
-　　　　const text2 = document.getElementById('text2').value;
-　　　　const lines1 = text1.split('\n');
-　　　　const lines2 = text2.split('\n');
-　　　　let output1 = '';
-　　　　let output2 = '';
-　　　　const maxLines = Math.max(lines1.length, lines2.length);
-　　　　
-　　　　for (let i = 0; i < maxLines; i++) {
-　　　　　　const line1 = lines1[i] || '';
-　　　　　　const line2 = lines2[i] || '';
-　　　　　　
-　　　　　　if (line1 === line2) {
-　　　　　　　　// 同一の行はそのまま表示
-　　　　　　　　output1 += line1 + '<br>';
-　　　　　　　　output2 += line2 + '<br>';
-　　　　　　} else {
-　　　　　　　　// 行が異なる場合、単語ごとに分割して比較
-　　　　　　　　const words1 = line1.split(' ');
-　　　　　　　　const words2 = line2.split(' ');
-　　　　　　　　let lineOutput1 = '';
-　　　　　　　　let lineOutput2 = '';
-　　　　　　　　const maxWords = Math.max(words1.length, words2.length);
-　　　　　　　　
-　　　　　　　　for (let j = 0; j < maxWords; j++) {
-　　　　　　　　　　const word1 = words1[j] || '';
-　　　　　　　　　　const word2 = words2[j] || '';
-　　　　　　　　　　
-　　　　　　　　　　if (word1 === word2) {
-　　　　　　　　　　　　lineOutput1 += word1 + ' ';
-　　　　　　　　　　　　lineOutput2 += word2 + ' ';
-　　　　　　　　　　} else {
-　　　　　　　　　　　　if (word1 !== '') {
-　　　　　　　　　　　　　　lineOutput1 += '<span class="highlight-removed">' + word1 + '</span> ';
-　　　　　　　　　　　　}
-　　　　　　　　　　　　if (word2 !== '') {
-　　　　　　　　　　　　　　lineOutput2 += '<span class="highlight-added">' + word2 + '</span> ';
-　　　　　　　　　　　　}
-　　　　　　　　　　}
-　　　　　　　　}
-　　　　　　　　output1 += lineOutput1.trim() + '<br>';
-　　　　　　　　output2 += lineOutput2.trim() + '<br>';
-　　　　　　}
-　　　　}
-　　　　document.getElementById('output1').innerHTML = output1;
-　　　　document.getElementById('output2').innerHTML = output2;
-　　}
-　</script>
+  <h1>テキスト比較ツール</h1>
+  <div style="display: flex; justify-content: space-between;">
+    <textarea id="text1" placeholder="テキスト１を入力してください"></textarea>
+    <textarea id="text2" placeholder="テキスト２を入力してください"></textarea>
+  </div>
+  <button onclick="compareTexts()">比較する</button>
+  <div style="display: flex; justify-content: space-between;">
+    <div id="output1" class="output"></div>
+    <div id="output2" class="output"></div>
+  </div>
+  <script>
+    // 文字単位で差分を比較し、異なる文字を青色でハイライトする関数
+    function highlightCharDifferences(word1, word2) {
+      let result1 = '';
+      let result2 = '';
+      const maxLen = Math.max(word1.length, word2.length);
+      for (let i = 0; i < maxLen; i++) {
+        const char1 = word1[i] || '';
+        const char2 = word2[i] || '';
+        if (char1 === char2) {
+          result1 += char1;
+          result2 += char2;
+        } else {
+          if (char1 !== '') {
+            result1 += '<span class="highlight-diff">' + char1 + '</span>';
+          }
+          if (char2 !== '') {
+            result2 += '<span class="highlight-diff">' + char2 + '</span>';
+          }
+        }
+      }
+      return { result1, result2 };
+    }
+
+    function compareTexts() {
+      const text1 = document.getElementById('text1').value;
+      const text2 = document.getElementById('text2').value;
+      const lines1 = text1.split('\n');
+      const lines2 = text2.split('\n');
+      let output1 = '';
+      let output2 = '';
+      const maxLines = Math.max(lines1.length, lines2.length);
+      
+      for (let i = 0; i < maxLines; i++) {
+        const line1 = lines1[i] || '';
+        const line2 = lines2[i] || '';
+        
+        if (line1 === line2) {
+          output1 += line1 + '<br>';
+          output2 += line2 + '<br>';
+        } else {
+          // 行が異なる場合、単語ごとに分割して比較
+          const words1 = line1.split(' ');
+          const words2 = line2.split(' ');
+          let lineOutput1 = '';
+          let lineOutput2 = '';
+          const maxWords = Math.max(words1.length, words2.length);
+          
+          for (let j = 0; j < maxWords; j++) {
+            const word1 = words1[j] || '';
+            const word2 = words2[j] || '';
+            
+            if (word1 === word2) {
+              lineOutput1 += word1 + ' ';
+              lineOutput2 += word2 + ' ';
+            } else {
+              // 単語が異なる場合は文字単位の比較で差分をハイライト
+              const { result1, result2 } = highlightCharDifferences(word1, word2);
+              lineOutput1 += result1 + ' ';
+              lineOutput2 += result2 + ' ';
+            }
+          }
+          output1 += lineOutput1.trim() + '<br>';
+          output2 += lineOutput2.trim() + '<br>';
+        }
+      }
+      document.getElementById('output1').innerHTML = output1;
+      document.getElementById('output2').innerHTML = output2;
+    }
+  </script>
 </body>
 </html>
