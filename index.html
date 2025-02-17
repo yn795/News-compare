@@ -2,50 +2,50 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>高精度テキスト比較ツール (diff-match-patch)</title>
+  <title>サイドバイサイド比較 - diff-match-patch</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       margin: 20px;
+    }
+    .container {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
     }
     textarea {
       width: 45%;
       height: 200px;
       margin-bottom: 10px;
     }
-    .container {
+    .output-container {
       display: flex;
       justify-content: space-between;
-      margin-bottom: 10px;
+      gap: 10px;
     }
     .output {
-      width: 90%;
+      width: 45%;
       border: 1px solid #ddd;
       padding: 10px;
       background: #f9f9f9;
-      margin-top: 10px;
+      min-height: 150px;
       overflow: auto;
-      min-height: 100px;
+      white-space: pre-wrap; /* 改行やスペースを保持して折り返し表示 */
     }
-    /* diff-match-patchが生成するタグに対するスタイルを微調整 */
-    del {
-      background-color: #ffe6e6; /* 削除部分の背景色 */
-      text-decoration: none;    /* 取り消し線は外す例 */
-      color: #d33;             /* 文字色 */
-    }
-    ins {
-      background-color: #e6ffe6; /* 追加部分の背景色 */
-      text-decoration: none;     /* 下線は外す例 */
-      color: #393;               /* 文字色 */
+    /* 差分の強調表示 */
+    .highlight-diff {
+      background-color: #cce5ff; /* 薄い青 */
+      font-weight: bold;         /* 太字 */
     }
   </style>
-  <!-- diff-match-patchのCDN (uncompressed版) -->
+  <!-- diff-match-patch ライブラリ (uncompressed版CDN) -->
   <script src="https://cdn.jsdelivr.net/gh/google/diff-match-patch/javascript/diff_match_patch_uncompressed.js"></script>
 </head>
 <body>
+  <h1>サイドバイサイド比較 - diff-match-patch</h1>
 
-  <h1>高精度テキスト比較ツール (diff-match-patch)</h1>
-
+  <!-- 入力欄 -->
   <div class="container">
     <textarea id="text1" placeholder="テキスト1を入力"></textarea>
     <textarea id="text2" placeholder="テキスト2を入力"></textarea>
@@ -53,44 +53,63 @@
 
   <button onclick="compareTexts()">比較する</button>
 
-  <div id="result" class="output"></div>
+  <!-- 結果表示 -->
+  <div class="output-container">
+    <div id="output1" class="output"></div>
+    <div id="output2" class="output"></div>
+  </div>
 
   <script>
     /**
-     * 連続する空白文字(改行・タブ含む)を1つの半角スペースにまとめる関数
-     * @param {string} text
-     * @returns {string}
+     * 改行やタブなどの連続空白を1つのスペースにまとめ、前後の空白を除去
      */
     function normalizeText(text) {
       return text
-        // 改行やタブを含む連続空白をまとめて半角スペースに
-        .replace(/\s+/g, " ")
-        // 前後の空白を除去
+        .replace(/\s+/g, ' ') // 改行・タブ含む連続空白を1つに
         .trim();
     }
 
     function compareTexts() {
+      // 入力取得
       const rawText1 = document.getElementById("text1").value;
       const rawText2 = document.getElementById("text2").value;
 
-      // 軽く正規化して改行などの差を抑える
+      // 軽く正規化
       const normText1 = normalizeText(rawText1);
       const normText2 = normalizeText(rawText2);
 
-      // diff-match-patch のインスタンス作成
+      // diff-match-patch で差分を取得
       const dmp = new diff_match_patch();
-
-      // 差分を取得 (このままだと非常に細かい差分も取る)
       let diffs = dmp.diff_main(normText1, normText2);
 
-      // 差分を最適化（マージ等）
+      // 差分をより人間が読みやすい形に最適化
       dmp.diff_cleanupSemantic(diffs);
 
-      // HTMLの差分表示を生成
-      const diffHtml = dmp.diff_prettyHtml(diffs);
+      // サイドバイサイド用に、左右それぞれの出力を生成
+      let leftOutput = "";
+      let rightOutput = "";
 
-      // 表示
-      document.getElementById("result").innerHTML = diffHtml;
+      // diffの結果をループ
+      for (let i = 0; i < diffs.length; i++) {
+        const diffType = diffs[i][0]; // -1:削除, 0:一致, 1:追加
+        const diffText = diffs[i][1];
+
+        if (diffType === 0) {
+          // 一致している部分は両方にそのまま表示
+          leftOutput += diffText;
+          rightOutput += diffText;
+        } else if (diffType === -1) {
+          // テキスト1にのみ存在 → 左側に青色表示
+          leftOutput += `<span class="highlight-diff">${diffText}</span>`;
+        } else if (diffType === 1) {
+          // テキスト2にのみ存在 → 右側に青色表示
+          rightOutput += `<span class="highlight-diff">${diffText}</span>`;
+        }
+      }
+
+      // 結果をHTMLに反映
+      document.getElementById("output1").innerHTML = leftOutput;
+      document.getElementById("output2").innerHTML = rightOutput;
     }
   </script>
 </body>
