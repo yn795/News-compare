@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>サイドバイサイド比較 - diff-match-patch</title>
+  <title>1行表示のテキスト比較 - diff-match-patch</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -31,19 +31,21 @@
       background: #f9f9f9;
       min-height: 150px;
       overflow: auto;
-      white-space: pre-wrap; /* 改行やスペースを保持して折り返し表示 */
+      /* 改行を無視して折り返す */
+      white-space: normal;  
+      word-wrap: break-word;
     }
-    /* 差分の強調表示 */
+    /* 差分の強調表示（薄い青＋太字） */
     .highlight-diff {
-      background-color: #cce5ff; /* 薄い青 */
-      font-weight: bold;         /* 太字 */
+      background-color: #cce5ff;
+      font-weight: bold;
     }
   </style>
   <!-- diff-match-patch ライブラリ (uncompressed版CDN) -->
   <script src="https://cdn.jsdelivr.net/gh/google/diff-match-patch/javascript/diff_match_patch_uncompressed.js"></script>
 </head>
 <body>
-  <h1>サイドバイサイド比較 - diff-match-patch</h1>
+  <h1>1行表示のテキスト比較 - diff-match-patch</h1>
 
   <!-- 入力欄 -->
   <div class="container">
@@ -61,35 +63,36 @@
 
   <script>
     /**
-     * 改行やタブなどの連続空白を1つのスペースにまとめ、前後の空白を除去
+     * 改行やタブなどの連続空白を1つのスペースにまとめ、さらに改行を消す
+     * → 結果が1行になり、改行差分を抑える
      */
     function normalizeText(text) {
       return text
-        .replace(/\s+/g, ' ') // 改行・タブ含む連続空白を1つに
+        // 改行・タブなど含む連続空白を1つの半角スペースに
+        .replace(/\s+/g, ' ')
+        // 前後の空白を除去
         .trim();
     }
 
     function compareTexts() {
-      // 入力取得
       const rawText1 = document.getElementById("text1").value;
       const rawText2 = document.getElementById("text2").value;
 
-      // 軽く正規化
+      // 改行や余分な空白をまとめて1行化
       const normText1 = normalizeText(rawText1);
       const normText2 = normalizeText(rawText2);
 
-      // diff-match-patch で差分を取得
+      // diff-match-patch で差分を計算
       const dmp = new diff_match_patch();
       let diffs = dmp.diff_main(normText1, normText2);
 
-      // 差分をより人間が読みやすい形に最適化
+      // 読みやすい形に最適化
       dmp.diff_cleanupSemantic(diffs);
 
-      // サイドバイサイド用に、左右それぞれの出力を生成
+      // サイドバイサイド用に左右に分けて出力を組み立てる
       let leftOutput = "";
       let rightOutput = "";
 
-      // diffの結果をループ
       for (let i = 0; i < diffs.length; i++) {
         const diffType = diffs[i][0]; // -1:削除, 0:一致, 1:追加
         const diffText = diffs[i][1];
@@ -99,15 +102,15 @@
           leftOutput += diffText;
           rightOutput += diffText;
         } else if (diffType === -1) {
-          // テキスト1にのみ存在 → 左側に青色表示
+          // テキスト1にのみ存在 → 左側をハイライト
           leftOutput += `<span class="highlight-diff">${diffText}</span>`;
         } else if (diffType === 1) {
-          // テキスト2にのみ存在 → 右側に青色表示
+          // テキスト2にのみ存在 → 右側をハイライト
           rightOutput += `<span class="highlight-diff">${diffText}</span>`;
         }
       }
 
-      // 結果をHTMLに反映
+      // 結果表示
       document.getElementById("output1").innerHTML = leftOutput;
       document.getElementById("output2").innerHTML = rightOutput;
     }
