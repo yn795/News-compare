@@ -1,8 +1,8 @@
-<!DOCTYPE HTML>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>改行を無視したテキスト比較ツール</title>
+  <title>高精度テキスト比較ツール (diff-match-patch)</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -13,130 +13,84 @@
       height: 200px;
       margin-bottom: 10px;
     }
-    .output {
-      width: 45%;
-      border: 1px solid #ddd;
-      padding: 10px;
-      background: #f9f9f9;
-      margin-bottom: 10px;
-      overflow: auto;
-      min-height: 100px;
-    }
-    .highlight-diff {
-      color: blue;
-      font-weight: bold;
-    }
     .container {
       display: flex;
       justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .output {
+      width: 90%;
+      border: 1px solid #ddd;
+      padding: 10px;
+      background: #f9f9f9;
+      margin-top: 10px;
+      overflow: auto;
+      min-height: 100px;
+    }
+    /* diff-match-patchが生成するタグに対するスタイルを微調整 */
+    del {
+      background-color: #ffe6e6; /* 削除部分の背景色 */
+      text-decoration: none;    /* 取り消し線は外す例 */
+      color: #d33;             /* 文字色 */
+    }
+    ins {
+      background-color: #e6ffe6; /* 追加部分の背景色 */
+      text-decoration: none;     /* 下線は外す例 */
+      color: #393;               /* 文字色 */
     }
   </style>
+  <!-- diff-match-patchのCDN (uncompressed版) -->
+  <script src="https://cdn.jsdelivr.net/gh/google/diff-match-patch/javascript/diff_match_patch_uncompressed.js"></script>
 </head>
 <body>
-  <h1>改行を無視したテキスト比較ツール</h1>
+
+  <h1>高精度テキスト比較ツール (diff-match-patch)</h1>
+
   <div class="container">
-    <textarea id="text1" placeholder="テキスト１を入力してください"></textarea>
-    <textarea id="text2" placeholder="テキスト２を入力してください"></textarea>
+    <textarea id="text1" placeholder="テキスト1を入力"></textarea>
+    <textarea id="text2" placeholder="テキスト2を入力"></textarea>
   </div>
+
   <button onclick="compareTexts()">比較する</button>
-  <div class="container">
-    <div id="output1" class="output"></div>
-    <div id="output2" class="output"></div>
-  </div>
+
+  <div id="result" class="output"></div>
+
   <script>
     /**
-     * 単語単位の最長共通部分列（LCS）を求める関数
-     * @param {string[]} words1
-     * @param {string[]} words2
-     * @returns {Array} diff結果の配列
+     * 連続する空白文字(改行・タブ含む)を1つの半角スペースにまとめる関数
+     * @param {string} text
+     * @returns {string}
      */
-    function diffWords(words1, words2) {
-      const m = words1.length;
-      const n = words2.length;
-      // DPテーブルを用意
-      const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
-
-      // LCS長をDPで求める
-      for (let i = 0; i < m; i++) {
-        for (let j = 0; j < n; j++) {
-          if (words1[i] === words2[j]) {
-            dp[i + 1][j + 1] = dp[i][j] + 1;
-          } else {
-            dp[i + 1][j + 1] = Math.max(dp[i + 1][j], dp[i][j + 1]);
-          }
-        }
-      }
-
-      // LCSをたどって差分抽出
-      let i = m, j = n;
-      const result = [];
-      while (i > 0 && j > 0) {
-        if (words1[i - 1] === words2[j - 1]) {
-          // 同じ単語の場合
-          result.unshift({ type: 'equal', text: words1[i - 1] });
-          i--;
-          j--;
-        } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-          // テキスト1にしかない単語
-          result.unshift({ type: 'removed', text: words1[i - 1] });
-          i--;
-        } else {
-          // テキスト2にしかない単語
-          result.unshift({ type: 'added', text: words2[j - 1] });
-          j--;
-        }
-      }
-      // 余った単語を追加または削除として処理
-      while (i > 0) {
-        result.unshift({ type: 'removed', text: words1[i - 1] });
-        i--;
-      }
-      while (j > 0) {
-        result.unshift({ type: 'added', text: words2[j - 1] });
-        j--;
-      }
-      return result;
+    function normalizeText(text) {
+      return text
+        // 改行やタブを含む連続空白をまとめて半角スペースに
+        .replace(/\s+/g, " ")
+        // 前後の空白を除去
+        .trim();
     }
 
-    /**
-     * テキスト比較して結果を表示するメイン関数
-     */
     function compareTexts() {
-      // テキスト取得
       const rawText1 = document.getElementById("text1").value;
       const rawText2 = document.getElementById("text2").value;
 
-      // 改行や余分な空白をまとめて単語配列化
-      // 改行をすべて半角スペースに置き換え、複数の空白を一つにまとめる
-      const normalized1 = rawText1.replace(/\s+/g, " ").trim();
-      const normalized2 = rawText2.replace(/\s+/g, " ").trim();
+      // 軽く正規化して改行などの差を抑える
+      const normText1 = normalizeText(rawText1);
+      const normText2 = normalizeText(rawText2);
 
-      // 単語に分割
-      const words1 = normalized1 ? normalized1.split(" ") : [];
-      const words2 = normalized2 ? normalized2.split(" ") : [];
+      // diff-match-patch のインスタンス作成
+      const dmp = new diff_match_patch();
 
-      // LCSベースの差分取得
-      const diff = diffWords(words1, words2);
+      // 差分を取得 (このままだと非常に細かい差分も取る)
+      let diffs = dmp.diff_main(normText1, normText2);
 
-      // 出力用の文字列
-      let outputLeft = "";
-      let outputRight = "";
+      // 差分を最適化（マージ等）
+      dmp.diff_cleanupSemantic(diffs);
 
-      diff.forEach(token => {
-        if (token.type === 'equal') {
-          outputLeft += token.text + " ";
-          outputRight += token.text + " ";
-        } else if (token.type === 'removed') {
-          // テキスト1にのみ存在 → 左側で青文字
-          outputLeft += `<span class="highlight-diff">${token.text}</span> `;
-        } else if (token.type === 'added') {
-          // テキスト2にのみ存在 → 右側で青文字
-          outputRight += `<span class="highlight-diff">${token.text}</span> `;
-        }
-      });
+      // HTMLの差分表示を生成
+      const diffHtml = dmp.diff_prettyHtml(diffs);
 
-      document.getElementById("output1").innerHTML = outputLeft.trim();
-      document.getElementById("output2").innerHTML = outputRight.trim();
+      // 表示
+      document.getElementById("result").innerHTML = diffHtml;
     }
   </script>
 </body>
