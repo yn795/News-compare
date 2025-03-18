@@ -2,94 +2,83 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>見やすいテキスト比較ツール</title>
+  <title>シンプルなテキスト比較ツール</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      margin: 20px;
-      background-color: #fdfdfd;
+      padding: 15px;
     }
-    .container, .output-container {
+    .container {
       display: flex;
-      justify-content: space-between;
       gap: 10px;
     }
-    textarea {
+    textarea, .output {
       width: 48%;
-      height: 200px;
+      height: 300px;
       padding: 10px;
-    }
-    .output {
-      width: 48%;
-      border: 1px solid #ddd;
-      padding: 10px;
-      background: #fff;
-      min-height: 200px;
-      overflow-y: auto;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      overflow: auto;
       white-space: pre-wrap;
       line-height: 1.5;
     }
-    .diff {
-      background-color: #e1f5fe; /* 淡い青背景 */
+    .highlight-diff {
+      background-color: #cce5ff;
       font-weight: bold;
-    }
-    .line {
-      padding: 2px 5px;
-      border-bottom: 1px solid #f1f1f1;
     }
   </style>
   <script src="https://cdn.jsdelivr.net/gh/google/diff-match-patch/javascript/diff_match_patch_uncompressed.js"></script>
 </head>
 <body>
-  <h2>見やすいテキスト比較ツール</h2>
+  <h2>見やすいテキスト比較ツール（改行調整版）</h2>
   <div class="container">
     <textarea id="text1" placeholder="テキスト1を入力"></textarea>
     <textarea id="text2" placeholder="テキスト2を入力"></textarea>
   </div>
   <button onclick="compareTexts()">比較する</button>
-  <div class="output-container">
+  <div class="container" style="margin-top:15px;">
     <div id="output1" class="output"></div>
     <div id="output2" class="output"></div>
   </div>
 
-  <script>
-    function normalizeText(text) {
-      return text.replace(/\//g, '').replace(/肩書き|場所|時間/g, '').replace(/\s+/g, ' ').trim();
+<script>
+  const dmp = new diff_match_patch();
+
+  function normalizeText(text) {
+    return text.replace(/\//g, '').replace(/肩書き|場所|時間/g, '')
+               .replace(/\s+/g, ' ').trim();
+  }
+
+  function compareTexts() {
+    const text1 = normalizeText(document.getElementById("text1").value).split(/(?<=。)/);
+    const text2 = normalizeText(document.getElementById("text2").value).split(/(?<=。)/);
+    const maxLines = Math.max(text1.length, text2.length);
+    let output1 = '', output2 = '';
+
+    for (let i = 0; i < maxLines; i++) {
+      const line1 = text1[i] || '';
+      const line2 = text2[i] || '';
+      const diffs = dmp.diff_main(line1, line2);
+      dmp.diff_cleanupSemantic(diffs);
+
+      let lineHtml1 = '', lineHtml2 = '';
+      diffs.forEach(([type, content]) => {
+        const html = type === 0 ? content : `<span class="highlight-diff">${content}</span>`;
+        if (type !== 1) lineHtml1 += html;
+        if (type !== -1) lineHtml2 += html;
+      });
+
+      output1 += lineHtml1 + '<br>';
+      output2 += lineHtml2 + '<br>';
     }
 
-    function splitLines(text) {
-      return text.split(/(?<=。|！|？|\n)/).filter(line => line.trim() !== '');
-    }
+    document.getElementById('output1').innerHTML = output1;
+    document.getElementById("output2").innerHTML = output2;
+  }
 
-    function compareTexts() {
-      const rawText1 = normalizeText(document.getElementById("text1").value);
-      const rawText2 = normalizeText(document.getElementById("text2").value);
-
-      const lines1 = splitLines(rawText1);
-      const lines2 = splitLines(rawText2);
-      const maxLength = Math.max(lines1.length, lines2.length);
-
-      const output1 = document.getElementById("output1");
-      const output2 = document.getElementById("output2");
-
-      output1.innerHTML = '';
-      output2.innerHTML = '';
-
-      const dmp = new diff_match_patch();
-
-      for (let i = 0; i < maxLength; i++) {
-        const line1 = lines1[i] || '';
-        const line2 = lines2[i] || '';
-
-        const diffs = dmp.diff_main(line1, line2);
-        dmp.diff_cleanupSemantic(diffs);
-
-        const hasDiff = diffs.some(diff => diff[0] !== 0);
-
-        output1.innerHTML += `<div class="line ${hasDiff ? 'diff' : ''}">${line1}</div>`;
-        output2.innerHTML += `<div class="line ${hasDiff ? 'diff' : ''}">${line2}</div>`;
-      }
-    }
-  </script>
+  function normalizeText(text) {
+    return text.replace(/\//g, '').replace(/肩書き|場所|時間/g, '').replace(/\s+/g, ' ').trim();
+  }
+</script>
 </body>
 </html>
