@@ -2,121 +2,93 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>行を空けて表示するテキスト比較</title>
+  <title>見やすいテキスト比較ツール</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       margin: 20px;
+      background-color: #fdfdfd;
     }
-    .container {
+    .container, .output-container {
       display: flex;
       justify-content: space-between;
       gap: 10px;
-      margin-bottom: 10px;
     }
     textarea {
-      width: 45%;
+      width: 48%;
       height: 200px;
-      margin-bottom: 10px;
-    }
-    .output-container {
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
+      padding: 10px;
     }
     .output {
-      width: 45%;
+      width: 48%;
       border: 1px solid #ddd;
       padding: 10px;
-      background: #f9f9f9;
-      min-height: 150px;
-      overflow: auto;
-      /* 改行を可視化・折り返し表示 */
+      background: #fff;
+      min-height: 200px;
+      overflow-y: auto;
       white-space: pre-wrap;
-      word-wrap: break-word;
+      line-height: 1.5;
     }
-    /* 薄い青背景＋太字で差分をハイライト */
-    .highlight-diff {
-      background-color: #cce5ff;
+    .diff {
+      background-color: #e1f5fe; /* 淡い青背景 */
       font-weight: bold;
     }
+    .line {
+      padding: 2px 5px;
+      border-bottom: 1px solid #f1f1f1;
+    }
   </style>
-  <!-- diff-match-patch ライブラリ (uncompressed版CDN) -->
   <script src="https://cdn.jsdelivr.net/gh/google/diff-match-patch/javascript/diff_match_patch_uncompressed.js"></script>
 </head>
 <body>
-  <h1>行を空けて表示するテキスト比較</h1>
-
-  <!-- 入力欄 -->
+  <h2>見やすいテキスト比較ツール</h2>
   <div class="container">
     <textarea id="text1" placeholder="テキスト1を入力"></textarea>
     <textarea id="text2" placeholder="テキスト2を入力"></textarea>
   </div>
-
   <button onclick="compareTexts()">比較する</button>
-
-  <!-- 結果表示 -->
   <div class="output-container">
     <div id="output1" class="output"></div>
     <div id="output2" class="output"></div>
   </div>
 
   <script>
-    /**
-     * 指定された単語やスラッシュを削除し、
-     * 改行や連続空白を1つの空白にまとめる関数
-     */
     function normalizeText(text) {
-      // スラッシュと特定の単語を削除
-      text = text.replace(/\//g, '');               // 「/」削除
-      text = text.replace(/肩書き|場所|時間/g, ''); // 「肩書き」「場所」「時間」削除
+      return text.replace(/\//g, '').replace(/肩書き|場所|時間/g, '').replace(/\s+/g, ' ').trim();
+    }
 
-      // 改行・タブなどの連続空白を1つのスペースにまとめ、前後の空白を除去
-      text = text.replace(/\s+/g, ' ').trim();
-      return text;
+    function splitLines(text) {
+      return text.split(/(?<=。|！|？|\n)/).filter(line => line.trim() !== '');
     }
 
     function compareTexts() {
-      // 入力テキスト取得
-      const rawText1 = document.getElementById("text1").value;
-      const rawText2 = document.getElementById("text2").value;
+      const rawText1 = normalizeText(document.getElementById("text1").value);
+      const rawText2 = normalizeText(document.getElementById("text2").value);
 
-      // 正規化処理
-      const normText1 = normalizeText(rawText1);
-      const normText2 = normalizeText(rawText2);
+      const lines1 = splitLines(rawText1);
+      const lines2 = splitLines(rawText2);
+      const maxLength = Math.max(lines1.length, lines2.length);
 
-      // diff-match-patch で差分を計算
+      const output1 = document.getElementById("output1");
+      const output2 = document.getElementById("output2");
+
+      output1.innerHTML = '';
+      output2.innerHTML = '';
+
       const dmp = new diff_match_patch();
-      let diffs = dmp.diff_main(normText1, normText2);
 
-      // 差分を読みやすい形に最適化
-      dmp.diff_cleanupSemantic(diffs);
+      for (let i = 0; i < maxLength; i++) {
+        const line1 = lines1[i] || '';
+        const line2 = lines2[i] || '';
 
-      // サイドバイサイドで表示用に、左右それぞれの出力を組み立てる
-      let leftOutput = "";
-      let rightOutput = "";
+        const diffs = dmp.diff_main(line1, line2);
+        dmp.diff_cleanupSemantic(diffs);
 
-      // diff配列を1チャンクごとに改行して表示
-      for (let i = 0; i < diffs.length; i++) {
-        const diffType = diffs[i][0]; // -1:削除, 0:一致, 1:追加
-        const diffText = diffs[i][1];
+        const hasDiff = diffs.some(diff => diff[0] !== 0);
 
-        if (diffType === 0) {
-          // 一致している部分
-          leftOutput += diffText + "\n\n";   // 1チャンク毎に空行(行アケ)
-          rightOutput += diffText + "\n\n";
-        } else if (diffType === -1) {
-          // テキスト1にのみ存在(削除された部分) → 左側をハイライト
-          leftOutput += `<span class="highlight-diff">${diffText}</span>\n\n`;
-        } else if (diffType === 1) {
-          // テキスト2にのみ存在(追加された部分) → 右側をハイライト
-          rightOutput += `<span class="highlight-diff">${diffText}</span>\n\n`;
-        }
+        output1.innerHTML += `<div class="line ${hasDiff ? 'diff' : ''}">${line1}</div>`;
+        output2.innerHTML += `<div class="line ${hasDiff ? 'diff' : ''}">${line2}</div>`;
       }
-
-      // 結果を表示
-      document.getElementById("output1").innerHTML = leftOutput;
-      document.getElementById("output2").innerHTML = rightOutput;
     }
   </script>
 </body>
