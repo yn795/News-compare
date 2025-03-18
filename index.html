@@ -2,118 +2,79 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>テキスト比較ツール（見やすく改善）</title>
+  <title>テキスト比較ツール</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch.js"></script>
   <style>
     body {
       font-family: "Meiryo", Arial, sans-serif;
-      background-color: #fff;
-      color: #333;
       padding: 20px;
+      background-color: #fdfdfd;
+      color: #333;
     }
     .container {
       display: flex;
-      justify-content: space-between;
-      gap: 20px;
+      gap: 10px;
+      margin-bottom: 15px;
     }
     textarea {
-      width: 49%;
+      width: 50%;
       height: 250px;
       padding: 10px;
       box-sizing: border-box;
+      resize: vertical;
     }
     button {
-      margin-top: 15px;
       padding: 8px 20px;
       cursor: pointer;
       font-size: 14px;
     }
+    .result-container {
+      display: flex;
+      gap: 10px;
+    }
     .result {
-      width: 48%;
+      width: 50%;
       padding: 10px;
-      border: 1px solid #ddd;
+      border: 1px solid #ccc;
+      background-color: #fff;
+      min-height: 200px;
       white-space: pre-wrap;
-      word-wrap: break-word;
-      line-height: 1.8;
+      line-height: 1.6;
     }
     .added {
       background-color: #c9f7f7;
       font-weight: bold;
     }
     .removed {
-      background-color: #e7faff;
+      background-color: #ffdddd;
       text-decoration: line-through;
-    }
-    .line {
-      margin-bottom: 10px;
-    }
-    h2 {
-      font-size: 16px;
-      border-bottom: 3px solid #00bcd4;
-      display: inline-block;
-      padding-bottom: 3px;
     }
   </style>
 </head>
 <body>
 
-<h2>テキスト比較ツール</h2>
+<h2>見やすいテキスト比較ツール</h2>
 
 <div class="container">
-  <textarea id="text1" placeholder="元のテキストを入力"></textarea>
-  <textarea id="text2" placeholder="比較したいテキストを入力"></textarea>
+  <textarea id="text1" placeholder="元のテキストを入力してください"></textarea>
+  <textarea id="text2" placeholder="比較したいテキストを入力してください"></textarea>
 </div>
 
 <button onclick="compareTexts()">比較する</button>
 
-<div class="container">
+<div class="result-container">
   <div id="output1" class="result"></div>
   <div id="output2" class="result"></div>
 </div>
 
 <script>
 function normalizeText(text) {
-  text = text.replace(/\//g, '');
-  text = text.replace(/\s+/g, ' ').trim();
-  return text;
+  return text.replace(/\//g, '').replace(/\s+/g, ' ').trim();
 }
 
 function compareTexts() {
-  const text1 = normalizeText(document.getElementById('text1').value);
-  const text2 = normalizeText(document.getElementById('text2').value);
-
-  const dmp = new diff_match_patch();
-  const diff = dmp.diff_main(text1, text2);
-  dmp.diff_cleanupSemantic(diff);
-
-  let output1 = '';
-  let output2 = '';
-
-  diff.forEach(part => {
-    const op = part[0];
-    const data = part[1];
-
-    if (op === 0) { // 一致部分
-      output1 += `<div class="line">${data}</div>`;
-      output2 += data;
-    } else if (op === -1) { // 削除部分
-      output1 += `<span class="removed">${data}</span>`;
-    } else if (op === 1) { //追加
-      output2 += `<span class="added">${data}</span>`;
-    }
-  });
-
-  document.getElementById('output1').innerHTML = output1;
-  document.getElementById('output2').innerHTML = output2;
-}
-</script>
-
-<button onclick="compareTexts()">比較する</button>
-
-<script>
-function compareTexts(){
-  const rawText1 = document.getElementById("text1").value;
-  const rawText2 = document.getElementById("text2").value;
+  const rawText1 = document.getElementById('text1').value;
+  const rawText2 = document.getElementById('text2').value;
 
   const text1 = normalizeText(rawText1);
   const text2 = normalizeText(rawText2);
@@ -122,22 +83,23 @@ function compareTexts(){
   const diffs = dmp.diff_main(text1, text2);
   dmp.diff_cleanupSemantic(diffs);
 
-  let output1 = '';
-  let output2 = '';
+  let outputLeft = '';
+  let outputRight = '';
 
   diffs.forEach(part => {
-    if (part[0] === 0) {
-      output1 += part[1];
-      output2 += part[1];
-    } else if (part[0] === -1) {
-      output1 += `<span class="removed">${part[1]}</span>`;
-    } else if (part[0] === 1) {
-      output2 += `<span class="added">${part[1]}</span>`;
+    const [op, data] = part;
+    if (op === 0) { // 一致
+      outputLeft += data;
+      outputRight += data;
+    } else if (op === -1) { // 左側（元テキスト）の削除部分
+      outputLeft += `<span class="removed">${data}</span>`;
+    } else if (op === 1) { // 右側（比較テキスト）の追加部分
+      outputRight += `<span class="added">${data}</span>`;
     }
   });
 
-  document.getElementById('output1').innerHTML = output1;
-  document.getElementById('output2').innerHTML = output2;
+  document.getElementById('output1').innerHTML = outputLeft;
+  document.getElementById('output2').innerHTML = outputRight;
 }
 </script>
 
