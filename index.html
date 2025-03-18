@@ -1,86 +1,34 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>テキスト比較ツール</title>
+  <meta charset="UTF-8" />
+  <title>テキスト比較ツール(最小構成)</title>
   <style>
-    /* ページ全体のベーススタイル */
     body {
       font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      background-color: #f0f2f5;
-    }
-    h1 {
-      text-align: center;
-      margin-top: 20px;
-    }
-
-    /* メインコンテナ */
-    .main-container {
-      max-width: 1000px;
-      margin: 20px auto;
-      padding: 20px;
-      background-color: #fff;
-      border-radius: 6px;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    }
-
-    /* 入力欄・ボタン周り */
-    .input-section {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-    .textarea-container {
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
+      margin: 20px;
     }
     textarea {
-      width: 50%;
-      height: 180px;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      resize: vertical;
-      font-size: 14px;
-      line-height: 1.4;
+      width: 45%;
+      height: 120px;
+      margin-right: 10px;
+      vertical-align: top;
     }
     button {
-      align-self: center;
-      padding: 8px 16px;
-      font-size: 14px;
-      border: none;
-      border-radius: 4px;
-      background-color: #007bff;
-      color: #fff;
+      margin-top: 10px;
+      padding: 6px 12px;
       cursor: pointer;
     }
-    button:hover {
-      background-color: #0056b3;
-    }
-
-    /* 出力結果エリア */
-    .output-section {
-      display: flex;
-      gap: 10px;
-      margin-top: 20px;
-    }
-    .output-container {
-      flex: 1;
-      background: #f9f9f9;
+    .output {
+      width: 45%;
       border: 1px solid #ddd;
-      border-radius: 4px;
       padding: 10px;
-      min-height: 200px;
-      overflow: auto;
-      /* 改行を可視化・折り返し表示 */
+      margin-top: 10px;
+      background: #f9f9f9;
       white-space: pre-wrap;
       word-wrap: break-word;
+      min-height: 120px;
     }
-    /* 薄い青背景＋太字で差分をハイライト */
     .highlight-diff {
       background-color: #cce5ff;
       font-weight: bold;
@@ -91,79 +39,51 @@
 </head>
 <body>
   <h1>テキスト比較ツール</h1>
-  <div class="main-container">
 
-    <!-- 入力欄 -->
-    <div class="input-section">
-      <div class="textarea-container">
-        <textarea id="text1" placeholder="テキスト1を入力"></textarea>
-        <textarea id="text2" placeholder="テキスト2を入力"></textarea>
-      </div>
-      <button onclick="compareTexts()">比較する</button>
-    </div>
-
-    <!-- 結果表示 -->
-    <div class="output-section">
-      <div id="output1" class="output-container"></div>
-      <div id="output2" class="output-container"></div>
-    </div>
-
+  <div>
+    <textarea id="text1" placeholder="テキスト1"></textarea>
+    <textarea id="text2" placeholder="テキスト2"></textarea>
   </div>
+  <button onclick="compareTexts()">比較する</button>
+
+  <div id="output1" class="output"></div>
+  <div id="output2" class="output"></div>
 
   <script>
-    /**
-     * 指定された単語やスラッシュを削除し、
-     * 改行や連続空白を1つの空白にまとめる関数
-     */
     function normalizeText(text) {
-      // スラッシュと特定の単語を削除
-      text = text.replace(/\//g, '');               // 「/」削除
-      text = text.replace(/肩書き|場所|時間/g, ''); // 「肩書き」「場所」「時間」削除
-
-      // 改行・タブなどの連続空白を1つのスペースにまとめ、前後の空白を除去
-      text = text.replace(/\s+/g, ' ').trim();
-      return text;
+      // スラッシュや特定ワードを削除し、連続空白を1つにまとめる
+      text = text.replace(/\//g, '');
+      text = text.replace(/肩書き|場所|時間/g, '');
+      return text.replace(/\s+/g, ' ').trim();
     }
 
     function compareTexts() {
-      // 入力テキスト取得
       const rawText1 = document.getElementById("text1").value;
       const rawText2 = document.getElementById("text2").value;
 
-      // 正規化処理
       const normText1 = normalizeText(rawText1);
       const normText2 = normalizeText(rawText2);
 
-      // diff-match-patch で差分を計算
       const dmp = new diff_match_patch();
       let diffs = dmp.diff_main(normText1, normText2);
-
-      // 差分を読みやすい形に最適化
       dmp.diff_cleanupSemantic(diffs);
 
-      // サイドバイサイド表示用の文字列を組み立てる
       let leftOutput = "";
       let rightOutput = "";
 
-      // diff配列を1チャンクごとに改行して表示
       for (let i = 0; i < diffs.length; i++) {
         const diffType = diffs[i][0]; // -1:削除, 0:一致, 1:追加
         const diffText = diffs[i][1];
-
         if (diffType === 0) {
-          // 一致している部分
-          leftOutput += diffText + "\n\n";
-          rightOutput += diffText + "\n\n";
+          leftOutput += diffText;
+          rightOutput += diffText;
         } else if (diffType === -1) {
-          // テキスト1にのみ存在(削除された部分) → 左側をハイライト
-          leftOutput += `<span class="highlight-diff">${diffText}</span>\n\n`;
+          leftOutput += `<span class="highlight-diff">${diffText}</span>`;
         } else if (diffType === 1) {
-          // テキスト2にのみ存在(追加された部分) → 右側をハイライト
-          rightOutput += `<span class="highlight-diff">${diffText}</span>\n\n`;
+          rightOutput += `<span class="highlight-diff">${diffText}</span>`;
         }
       }
 
-      // 結果を表示
       document.getElementById("output1").innerHTML = leftOutput;
       document.getElementById("output2").innerHTML = rightOutput;
     }
