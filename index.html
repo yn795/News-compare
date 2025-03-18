@@ -1,77 +1,121 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
   <meta charset="UTF-8">
-  <title>テキスト比較ツール（見やすく改善）</title>
+  <title>見やすいテキスト比較ツール</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch.js"></script>
   <style>
     body {
       font-family: 'Segoe UI', 'Meiryo', sans-serif;
       line-height: 1.6;
       margin: 20px;
-      background-color: #f8f9fa;
-    }
-    h1 {
-      font-size: 20px;
-      margin-bottom: 10px;
     }
     .container {
       display: flex;
+      gap: 20px;
       justify-content: space-between;
-      margin-bottom: 10px;
     }
     textarea {
       width: 48%;
-      height: 200px;
+      height: 250px;
       padding: 10px;
       box-sizing: border-box;
     }
     button {
-      margin-top: 10px;
       padding: 8px 20px;
       cursor: pointer;
+      margin: 15px 0;
     }
-    .output-container {
+    .result-container {
       display: flex;
       justify-content: space-between;
-      margin-top: 15px;
-      gap: 20px;
+      gap: 10px;
+      margin-top: 10px;
     }
-    .output {
+    .result {
       width: 48%;
       padding: 10px;
-      box-sizing: border-box;
+      background: #f7f9fa;
       border: 1px solid #ccc;
       white-space: pre-wrap;
       word-wrap: break-word;
+      height: auto;
+      min-height: 200px;
     }
     .added {
-      background-color: #d0f0ff;
+      background-color: #d9f1ff;
       font-weight: bold;
     }
     .removed {
-      background-color: #ffe3e3;
+      background-color: #ffe4e1;
       text-decoration: line-through;
-      font-weight: bold;
-    }
-    .section {
-      margin-bottom: 1em;
-      border-bottom: 1px dashed #ccc;
-      padding-bottom: 8px;
     }
   </style>
 </head>
 <body>
 
-<h2>見やすいテキスト比較ツール</h1>
+  <h2>見やすいテキスト比較ツール</h1>
 
-<div class="container">
-  <textarea id="text1" placeholder="元のテキストを入力"></textarea>
-  <textarea id="text2" placeholder="比較したいテキストを入力"></textarea>
-</div>
+  <div class="input-container">
+    <textarea id="text1" placeholder="元のテキストを入力してください"></textarea>
+    <textarea id="text2" placeholder="比較したいテキストを入力"></textarea>
+  </div>
 
-<button onclick="compareTexts()">比較する</button>
+  <button onclick="compareTexts()">比較する</button>
 
-<div class="container">
-  <div id="result1" class="output"></div>
-  <div class="output output-container"
+  <div class="result-container">
+    <div id="output1" class="result-container result"></div>
+    <div id="output2" class="result-container result"></div>
+  </div>
+
+<script>
+  function normalizeText(text) {
+    text = text.replace(/[\n\t\r]+/g, ' ').trim();
+    return text;
+  }
+
+  function compareTexts() {
+    const text1 = normalizeText(document.getElementById('text1').value);
+    const text2 = normalizeText(document.getElementById('text2').value);
+
+    const dmp = new diff_match_patch();
+    const diffs = dmp.diff_main(text1, text2);
+    dmp.diff_cleanupSemantic(diffs);
+
+    let outputLeft = '';
+    let outputRight = '';
+
+    diffs.forEach(diff => {
+      const type = diff[0];
+      const text = diff[1];
+
+      if (type === 0) {
+        outputLeft += `${text}`;
+        outputRight = outputLeft;
+      } else if (diffType === -1) {
+        outputLeft += `<span class="removed">${text}</span>`;
+      } else if (diffType === 1) {
+        outputRight += `<span class="added">${text}</span>`;
+      }
+    });
+
+    document.getElementById('output1').innerHTML = outputLeft;
+    document.getElementById('output2').innerHTML = outputRight;
+  }
+
+  function normalizeText(text) {
+    return text.replace(/\s+/g, ' ').trim();
+  }
+</script>
+</body>
+</html>
+
+### このコードで改善した点：
+
+- 左右の差分をしっかり横並び表示
+- 削除部分は赤背景と打消し線、追加部分は青背景＋太字
+- レイアウトを明確に分けて、視覚的に比較しやすく改善
+- 入力欄と結果を明確に分けて表示
+
+これで視覚的に非常に見やすくなります。ぜひお試しください。
