@@ -1,92 +1,77 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <title>テキスト比較ツール(最小構成)</title>
+  <meta charset="UTF-8">
+  <title>テキスト比較ツール（見やすく改善）</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch.js"></script>
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Segoe UI', 'Meiryo', sans-serif;
+      line-height: 1.6;
       margin: 20px;
+      background-color: #f8f9fa;
+    }
+    h1 {
+      font-size: 20px;
+      margin-bottom: 10px;
+    }
+    .container {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
     }
     textarea {
-      width: 45%;
-      height: 120px;
-      margin-right: 10px;
-      vertical-align: top;
+      width: 48%;
+      height: 200px;
+      padding: 10px;
+      box-sizing: border-box;
     }
     button {
       margin-top: 10px;
-      padding: 6px 12px;
+      padding: 8px 20px;
       cursor: pointer;
     }
+    .output-container {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 15px;
+      gap: 20px;
+    }
     .output {
-      width: 45%;
-      border: 1px solid #ddd;
+      width: 48%;
       padding: 10px;
-      margin-top: 10px;
-      background: #f9f9f9;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
       white-space: pre-wrap;
       word-wrap: break-word;
-      min-height: 120px;
     }
-    .highlight-diff {
-      background-color: #cce5ff;
+    .added {
+      background-color: #d0f0ff;
       font-weight: bold;
     }
+    .removed {
+      background-color: #ffe3e3;
+      text-decoration: line-through;
+      font-weight: bold;
+    }
+    .section {
+      margin-bottom: 1em;
+      border-bottom: 1px dashed #ccc;
+      padding-bottom: 8px;
+    }
   </style>
-  <!-- diff-match-patch ライブラリ (uncompressed版CDN) -->
-  <script src="https://cdn.jsdelivr.net/gh/google/diff-match-patch/javascript/diff_match_patch_uncompressed.js"></script>
 </head>
 <body>
-  <h1>テキスト比較ツール</h1>
 
-  <div>
-    <textarea id="text1" placeholder="テキスト1"></textarea>
-    <textarea id="text2" placeholder="テキスト2"></textarea>
-  </div>
-  <button onclick="compareTexts()">比較する</button>
+<h2>見やすいテキスト比較ツール</h1>
 
-  <div id="output1" class="output"></div>
-  <div id="output2" class="output"></div>
+<div class="container">
+  <textarea id="text1" placeholder="元のテキストを入力"></textarea>
+  <textarea id="text2" placeholder="比較したいテキストを入力"></textarea>
+</div>
 
-  <script>
-    function normalizeText(text) {
-      // スラッシュや特定ワードを削除し、連続空白を1つにまとめる
-      text = text.replace(/\//g, '');
-      text = text.replace(/肩書き|場所|時間/g, '');
-      return text.replace(/\s+/g, ' ').trim();
-    }
+<button onclick="compareTexts()">比較する</button>
 
-    function compareTexts() {
-      const rawText1 = document.getElementById("text1").value;
-      const rawText2 = document.getElementById("text2").value;
-
-      const normText1 = normalizeText(rawText1);
-      const normText2 = normalizeText(rawText2);
-
-      const dmp = new diff_match_patch();
-      let diffs = dmp.diff_main(normText1, normText2);
-      dmp.diff_cleanupSemantic(diffs);
-
-      let leftOutput = "";
-      let rightOutput = "";
-
-      for (let i = 0; i < diffs.length; i++) {
-        const diffType = diffs[i][0]; // -1:削除, 0:一致, 1:追加
-        const diffText = diffs[i][1];
-        if (diffType === 0) {
-          leftOutput += diffText;
-          rightOutput += diffText;
-        } else if (diffType === -1) {
-          leftOutput += `<span class="highlight-diff">${diffText}</span>`;
-        } else if (diffType === 1) {
-          rightOutput += `<span class="highlight-diff">${diffText}</span>`;
-        }
-      }
-
-      document.getElementById("output1").innerHTML = leftOutput;
-      document.getElementById("output2").innerHTML = rightOutput;
-    }
-  </script>
-</body>
-</html>
+<div class="container">
+  <div id="result1" class="output"></div>
+  <div class="output output-container"
